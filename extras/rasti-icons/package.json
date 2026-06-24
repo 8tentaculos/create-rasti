@@ -1,0 +1,11 @@
+{
+    "name" : "rasti-icons",
+    "version" : "0.0.0",
+    "private" : true,
+    "description" : "Generic Rasti icon component generator from GitHub-hosted SVG sets",
+    "type" : "module",
+    "bin" : {
+        "rasti-icons" : "./bin/rasti-icons.js"
+    },
+    "license" : "MIT"
+}

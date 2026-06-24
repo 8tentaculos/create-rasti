@@ -1,0 +1,170 @@
+:root {
+    --app-link: #5ee9df;
+    --app-link-hover: #93fdf5;
+    --app-accent: #5ee9df;
+    --app-border: rgba(255, 255, 255, 0.12);
+    --app-border-hover: rgba(94, 233, 223, 0.4);
+    --app-muted: rgba(255, 255, 255, 0.58);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: #0a0a0a;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: var(--app-link);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--app-link-hover);
+    text-decoration: underline;
+}
+
+.app {
+    font-family: system-ui, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(24px, 5vw, 40px);
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: clamp(20px, 5vw, 48px);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.logo-link {
+    display: inline-block;
+}
+
+.logo {
+    height: clamp(56px, 15vw, 96px);
+    display: block;
+}
+
+.home {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(24px, 6vw, 40px);
+}
+
+.page {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    min-width: 200px;
+    padding: 0 32px;
+    font-size: 20px;
+    font-weight: 650;
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(94, 233, 223, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%);
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 6px 20px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(16px);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.button:hover {
+    border-color: var(--app-border-hover);
+    background: linear-gradient(180deg, rgba(94, 233, 223, 0.28) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+.button:active {
+    transform: scale(0.985);
+}
+
+.info {
+    width: min(100%, 720px);
+    padding: clamp(20px, 4vw, 30px);
+    background: linear-gradient(180deg, rgba(20, 24, 28, 0.92) 0%, rgba(10, 10, 10, 0.82) 100%);
+    border-radius: 24px;
+    border: 1px solid var(--app-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 40px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(18px);
+}
+
+.info-stack {
+    display: grid;
+    gap: 16px;
+}
+
+.info-description {
+    margin: 0;
+    line-height: 1.7;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.info-includes {
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.info-includes p {
+    margin: 0;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.info-includes p + p {
+    margin-top: 8px;
+}
+
+.info-hint {
+    margin: 0;
+    line-height: 1.7;
+    color: var(--app-muted);
+}
+
+.info code {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}

@@ -1,0 +1,23 @@
+{
+    "name" : "rasti-ssr-app",
+    "private" : true,
+    "version" : "0.0.0",
+    "type" : "module",
+    "scripts" : {
+        "dev" : "node server",
+        "build" : "npm run build:client && npm run build:server",
+        "build:client" : "vite build --outDir dist/client",
+        "build:server" : "vite build --ssr src/entry-server.js --outDir dist/server",
+        "preview" : "cross-env NODE_ENV=production node server"
+    },
+    "dependencies" : {
+        "compression" : "{{COMPRESSION_VERSION}}",
+        "express" : "{{EXPRESS_VERSION}}",
+        "rasti" : "{{RASTI_VERSION}}",
+        "sirv" : "{{SIRV_VERSION}}"
+    },
+    "devDependencies" : {
+        "cross-env" : "{{CROSS_ENV_VERSION}}",
+        "vite" : "{{VITE_VERSION}}"
+    }
+}

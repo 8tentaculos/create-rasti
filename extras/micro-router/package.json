@@ -1,0 +1,12 @@
+{
+    "name" : "micro-router",
+    "version" : "0.0.0",
+    "private" : true,
+    "description" : "Minimal universal router",
+    "type" : "module",
+    "main" : "src/index.js",
+    "dependencies" : {
+        "path-to-regexp" : "^8.0.0"
+    },
+    "license" : "MIT"
+}

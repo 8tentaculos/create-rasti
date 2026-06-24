@@ -1,0 +1,9 @@
+{
+    "name" : "cn",
+    "version" : "0.0.0",
+    "private" : true,
+    "description" : "Fast conditional class names helper",
+    "type" : "module",
+    "main" : "src/index.js",
+    "license" : "MIT"
+}
