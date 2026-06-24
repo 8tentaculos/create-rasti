@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-06-24
+
 ### Added
 
 - Initial release.
@@ -16,4 +18,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Conditional template engine with `{{#if}}` / `{{#elif}}` / `{{#else}}` / `{{#endif}}`.
 - Convention-based styled template resolution (`-tailwind`, `-cssfun` variants).
 
-[Unreleased]: https://github.com/8tentaculos/create-rasti/compare/HEAD...HEAD
+[unreleased]: https://github.com/8tentaculos/create-rasti/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/8tentaculos/create-rasti/releases/tag/v0.0.1

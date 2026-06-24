@@ -1,34 +1,34 @@
 {
-    "name" : "create-rasti",
-    "version" : "0.0.0",
-    "description" : "Create Rasti projects with Vite",
-    "type" : "module",
-    "bin" : {
-        "create-rasti" : "./bin/create-rasti.js"
+    "name": "create-rasti",
+    "version": "0.0.1",
+    "description": "Create Rasti projects with Vite",
+    "type": "module",
+    "bin": {
+        "create-rasti": "./bin/create-rasti.js"
     },
-    "files" : [
+    "files": [
         "bin",
         "src",
         "templates",
         "extras",
         "!extras/**/node_modules"
     ],
-    "scripts" : {
-        "prepare" : "npm run test",
-        "lint" : "eslint src bin extras",
-        "test" : "vitest run",
-        "posttest" : "npm run lint",
+    "scripts": {
+        "prepare": "npm run test",
+        "lint": "eslint src bin extras",
+        "test": "vitest run",
+        "posttest": "npm run lint",
         "version": "node scripts/release-changelog.js"
     },
-    "repository" : {
-        "type" : "git",
-        "url" : "git+https://github.com/8tentaculos/create-rasti.git"
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/8tentaculos/create-rasti.git"
     },
-    "homepage" : "https://github.com/8tentaculos/create-rasti",
-    "bugs" : {
-        "url" : "https://github.com/8tentaculos/create-rasti/issues"
+    "homepage": "https://github.com/8tentaculos/create-rasti",
+    "bugs": {
+        "url": "https://github.com/8tentaculos/create-rasti/issues"
     },
-    "keywords" : [
+    "keywords": [
         "rasti",
         "vite",
         "starter",
@@ -37,19 +37,18 @@
         "spa",
         "ssr"
     ],
-    "author" : "Alberto Masuelli <alberto.masuelli@gmail.com> (https://github.com/8tentaculos)",
-    "license" : "MIT",
-    "dependencies" : {
-        "@clack/prompts" : "^0.9.1"
+    "author": "Alberto Masuelli <alberto.masuelli@gmail.com> (https://github.com/8tentaculos)",
+    "license": "MIT",
+    "dependencies": {
+        "@clack/prompts": "^0.9.1"
     },
-    "devDependencies" : {
-        "@eslint/js" : "^9.34.0",
-        "eslint" : "^9.34.0",
-        "globals" : "^16.3.0",
-        "vitest" : "^3.0.0"
+    "devDependencies": {
+        "@eslint/js": "^9.34.0",
+        "eslint": "^9.34.0",
+        "globals": "^16.3.0",
+        "vitest": "^3.0.0"
     },
-    "engines" : {
-        "node" : ">=22"
+    "engines": {
+        "node": ">=22"
     }
 }
-
