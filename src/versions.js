@@ -4,7 +4,7 @@
  * is mirrored in extras/micro-router/package.json, kept in sync manually).
  */
 export const VERSIONS = {
-    rasti : '^4.0.1',
+    rasti : '^4.1.0',
     vite : '^7.0.0',
     express : '^5.0.1',
     compression : '^1.8.1',
@@ -12,6 +12,6 @@ export const VERSIONS = {
     crossEnv : '^7.0.3',
     tailwindcss : '^4.0.0',
     tailwindVite : '^4.0.0',
-    cssfun : '^0.0.14',
+    cssfun : '^0.1.0',
     pathToRegexp : '^8.0.0'
 };
