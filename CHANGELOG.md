@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitHub Actions workflows for CI (`ci.yml`) and npm release (`release.yml`).
+
+### Changed
+
+- Bump generated-project `rasti` dependency to `^4.1.0`.
+- Bump generated-project `cssfun` dependency to `^0.1.0`.
+
 ## [0.0.1] - 2026-06-24
 
 ### Added
