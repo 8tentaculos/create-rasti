@@ -47,8 +47,14 @@ The router is intentionally narrow: route matching, URL creation, browser histor
 Generates one Rasti component per SVG icon under `src/icons/`:
 
 ```js
+import { Component } from 'rasti';
 import Heart from './icons/Heart.js';
-// <Heart className="..." width={24} height={24} />
+
+const LikeButton = Component.create`
+    <button>
+        <${Heart} className="icon" width="24" height="24" />
+    </button>
+`;
 ```
 
 A single preset writes components directly to `src/icons/`. Multiple presets write each set under `src/icons/<preset>/`.
