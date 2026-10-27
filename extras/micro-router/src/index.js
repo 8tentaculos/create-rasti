@@ -3,8 +3,8 @@ import { match, compile } from 'path-to-regexp';
 /**
  * @typedef {Object} Location
  * @property {string} path - The route path pattern (e.g., `/user/:id`).
- * @property {Object.<string, string>} params - The route parameters extracted from the URL path, sanitized to prevent injection attacks.
- * @property {Object.<string, string>} query - The query parameters parsed from the URL query string.
+ * @property {Object.<string, (string|Array.<string>)>} params - Route parameters decoded from the URL path. Wildcard parameters (e.g. `*rest`) are arrays of path segments. Untrusted input: escape at the point of output.
+ * @property {Object.<string, string>} query - Query parameters parsed from the URL query string. Untrusted input, same as `params`.
  * @property {function(string): boolean} test - A function to test if a given URL matches this route. Returns `true` if the URL matches the route, `false` otherwise.
  */
 
@@ -24,6 +24,10 @@ import { match, compile } from 'path-to-regexp';
 
 /**
  * Creates a router with navigation, URL creation, and event delegation.
+ *
+ * `params` and `query` on a `Location` come from the URL and are decoded but not
+ * escaped. Escape them at the point of output, in the context of that output.
+ *
  * @param {Array.<Route>} routes - Array of route objects. Each route must have a `path` and an `action` function.
  * @param {Object} [routerOptions={}] - Options for the router.
  * @param {string} [routerOptions.baseUrl=''] - A base URL to prepend to all routes and navigation.
@@ -32,28 +36,62 @@ import { match, compile } from 'path-to-regexp';
 export default function createRouter(routes, routerOptions = {}) {
     const { baseUrl = '' } = routerOptions;
 
+    /** Compiled matchers, keyed by route path. Built on first match and reused afterwards. */
+    const matchers = new Map();
+
+    /**
+     * Removes `baseUrl` from the start of a pathname.
+     * Only strips on a path segment boundary, so a `baseUrl` of `/app` leaves
+     * `/application/x` untouched.
+     * @param {string} pathname - The pathname to strip.
+     * @returns {string} - The pathname without the base url.
+     * @private
+     */
+    const stripBaseUrl = (pathname) => {
+        if (!baseUrl || !pathname.startsWith(baseUrl)) return pathname;
+
+        const rest = pathname.slice(baseUrl.length);
+        return rest === '' || rest.startsWith('/') ? rest : pathname;
+    };
+
     /**
      * Gets the pathname and query string from a given url.
+     * The fragment is dropped: it takes no part in matching.
      * @param {string} url - The url to get the pathname and query string from.
      * @returns {Object} - The pathname and query string.
      * @private
      */
     const getUrlParts = (url) => {
-        const [pathname, query] = url.replace(baseUrl, '').split('?');
-        return { pathname, query };
+        const [pathname, query] = url.split('#')[0].split('?');
+        // Stripping the whole pathname (a url equal to `baseUrl`) leaves the root route.
+        return { pathname : stripBaseUrl(pathname) || '/', query };
+    };
+
+    /**
+     * Gets the memoized matcher for a route path.
+     * @param {string} routePath - The route path to match against.
+     * @returns {function(string): (Object|false)} - The matcher function.
+     * @private
+     */
+    const getMatcher = (routePath) => {
+        let matcher = matchers.get(routePath);
+
+        if (!matcher) {
+            matcher = match(routePath, { decode : decodeURIComponent });
+            matchers.set(routePath, matcher);
+        }
+
+        return matcher;
     };
 
     /**
      * Gets the match result from a given pathname and route path.
      * @param {string} pathname - The pathname to match.
      * @param {string} routePath - The route path to match.
-     * @returns {Object|null} - The match result, or `null` if no match is found.
+     * @returns {Object|false} - The match result, or `false` if no match is found.
      * @private
      */
-    const getMatch = (pathname, routePath) => {
-        const matcher = match(routePath, { decode : decodeURIComponent });
-        return matcher(pathname);
-    };
+    const getMatch = (pathname, routePath) => getMatcher(routePath)(pathname);
 
     /**
      * Matches a given url against the routes.
@@ -71,7 +109,7 @@ export default function createRouter(routes, routerOptions = {}) {
                 /** @type {Location} */
                 const location = {
                     path : route.path,
-                    params : sanitizeParams(matched.params),
+                    params : matched.params,
                     query : Object.fromEntries(new URLSearchParams(query).entries()),
                     test : (url) => !!getMatch(getUrlParts(url).pathname, route.path)
                 };
@@ -85,6 +123,10 @@ export default function createRouter(routes, routerOptions = {}) {
 
     /**
      * Navigates to a given path, matches a route, and calls its action with a `Location` object.
+     *
+     * History is updated before the action runs, so an action that redirects can
+     * replace the entry it was reached through: `navigate('/login', { replaceHistory : true })`.
+     *
      * @param {string} url - The path to navigate to, including query string.
      * @param {Object} [options={}] - Options for navigation.
      * @param {boolean} [options.addToHistory=true] - Whether to add the navigation to the browser's history.
@@ -113,7 +155,7 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Creates a URL from a route path, parameters, and query string.
      * @param {string} path - The route path (e.g., `/user/:id`).
-     * @param {Object.<string, string>} [params={}] - Parameters to replace in the path (e.g., `{ id : '123' }` for `/user/:id`).
+     * @param {Object.<string, (string|Array.<string>)>} [params={}] - Parameters to replace in the path (e.g., `{ id : '123' }` for `/user/:id`). Wildcard parameters take an array of segments.
      * @param {Object.<string, string>} [query={}] - Query parameters to append to the URL (e.g., `{ page : '1', sort : 'name' }`).
      * @returns {string} - The generated URL with query parameters.
      */
@@ -127,6 +169,8 @@ export default function createRouter(routes, routerOptions = {}) {
 
     /**
      * Delegates navigation events for links with `data-router` attributes.
+     * Links the router cannot own (cross-origin, `target`, `download`, `rel="external"`)
+     * are left to the browser's default handling.
      * @param {HTMLElement} rootElement - The root element to listen for click events.
      * @returns {Function} - A function to undelegate the event listener.
      */
@@ -140,14 +184,34 @@ export default function createRouter(routes, routerOptions = {}) {
                 return;
             }
 
-            const anchor = event.target.closest('a[data-router]');
+            const target = event.target;
+            const anchor = typeof target?.closest === 'function' ? target.closest('a[data-router]') : null;
 
-            if (anchor && anchor.href) {
-                event.preventDefault();
-                const url = new URL(anchor.href);
-                window.scrollTo({ top : 0, behavior : 'instant' });
-                navigate(url.pathname + url.search);
+            if (!anchor) return;
+
+            const anchorTarget = anchor.getAttribute('target');
+            const rel = anchor.getAttribute('rel');
+
+            if (
+                anchor.hasAttribute('download') ||
+                (anchorTarget && anchorTarget !== '_self') ||
+                (rel && rel.split(/\s+/).includes('external'))
+            ) {
+                return;
             }
+
+            // `href` is an absolute string on HTML anchors; SVG anchors need the raw attribute.
+            const href = typeof anchor.href === 'string' ? anchor.href : anchor.getAttribute('href');
+
+            if (href === null) return;
+
+            const url = new URL(href, window.location.href);
+
+            if (url.origin !== window.location.origin) return;
+
+            event.preventDefault();
+            window.scrollTo({ top : 0, behavior : 'instant' });
+            navigate(url.pathname + url.search);
         };
         // Bind the click event to the root element.
         rootElement.addEventListener('click', handleClick);
@@ -159,9 +223,12 @@ export default function createRouter(routes, routerOptions = {}) {
 
     /**
      * Binds browser history changes to the navigation logic.
+     * No-op outside the browser.
      * @returns {Function} - A function to unbind the `popstate` event listener.
      */
     const bindHistory = () => {
+        if (typeof window === 'undefined') return () => {};
+
         const handlePopState = () => {
             // On popstate, navigate to the current URL
             navigate(window.location.pathname + window.location.search, { addToHistory : false });
@@ -173,19 +240,6 @@ export default function createRouter(routes, routerOptions = {}) {
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
-    };
-
-    /**
-     * Sanitizes route parameters to prevent injection attacks.
-     * @param {Object} params - The route parameters.
-     * @returns {Object} - The sanitized parameters.
-     */
-    const sanitizeParams = (params) => {
-        const sanitized = {};
-        for (const [key, value] of Object.entries(params)) {
-            sanitized[key] = String(value).replace(/[<>]/g, '');
-        }
-        return sanitized;
     };
 
     return { navigate, createUrl, delegateNavigation, bindHistory };
