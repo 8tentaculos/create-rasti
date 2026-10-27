@@ -7,13 +7,13 @@ Base templates (`spa/package.json`, `ssr/package.json`) reference them through `
 ## Values outside `versions.js`
 
 - **Logo / favicon CDN URLs** — derived from `VERSIONS.rasti`, exposed as `{{LOGO_SRC}}`, `{{LOGO_LIGHT_SRC}}`, and `{{FAVICON_SRC}}`. Bumping `rasti` updates them automatically.
-- **`path-to-regexp`** — also pinned in `extras/micro-router/package.json` for local linting. Keep it in sync with `VERSIONS.pathToRegexp`.
+- **`path-to-regexp`** — also pinned in `extras/micro-router/package.json` for local linting, and in this repo's `devDependencies` so `test/router.test.js` can import the router. Keep both in sync with `VERSIONS.pathToRegexp`.
 - **External links pinned to `master`** — Rasti `AGENTS.md` URL (written as `AGENTS-RASTI.md`) in `src/apply/index.js` and the create-rasti repo link in `src/apply/featuresInclude.js`. Update only if the default branch changes.
 
 ## Bump checklist
 
 1. Edit the constant in `src/versions.js`.
-2. If bumping `pathToRegexp`, mirror in `extras/micro-router/package.json`.
+2. If bumping `pathToRegexp`, mirror in `extras/micro-router/package.json` and in this repo's `devDependencies`.
 3. If bumping `rasti`, verify the logo asset exists on the new tag.
 4. Run `npm run lint`.
 5. Generate a project with each relevant flag combination and verify it builds and runs:
