@@ -10,6 +10,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls `baseUrl` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -23,6 +28,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (`/about/` -> `about/index.html`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\?.*$/, '').replace(/^https?:\/\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\//, '').replace(/\/$/, '') || 'index';
@@ -132,7 +142,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 

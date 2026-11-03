@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `App` is a `Component` subclass with a stable `handleIncrement` class field, following the Rasti 5 skill.
 - SSR: `window.__APP_OPTIONS__` escapes `<`, so a request URL holding `</script>` can't break out of the script tag; production 500 responses no longer include the stack trace.
 - Icon components leave `class` out without a `className`, and follow the text color: hardcoded black becomes `currentColor`.
+- The JSDoc of `cn`, `router-setup.js`, the SSR `app.js` and `build-static.js` type-checks under `strict` with `checkJs` (TypeScript 5.9 and 7).
 
 ### Removed
 

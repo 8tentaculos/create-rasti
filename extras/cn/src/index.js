@@ -1,5 +1,18 @@
+/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
+
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
 const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
 
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -23,7 +36,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example

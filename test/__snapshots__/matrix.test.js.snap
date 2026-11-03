@@ -382,8 +382,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -407,7 +420,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -948,8 +961,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -973,7 +999,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -1270,13 +1296,20 @@ App.mount({ url : window.location.pathname + window.location.search }, document.
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -1304,10 +1337,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -1590,8 +1624,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -1615,7 +1662,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -2055,8 +2102,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -2080,7 +2140,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -2375,13 +2435,20 @@ App.mount({ url : window.location.pathname + window.location.search }, document.
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -2409,10 +2476,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -2839,8 +2907,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -2864,7 +2945,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -3192,8 +3273,21 @@ const Home = Component.create\`
 
 export default Home;
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -3217,7 +3311,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -3512,13 +3606,20 @@ App.mount({ url : window.location.pathname + window.location.search }, document.
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -3546,10 +3647,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -3682,7 +3784,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -3705,14 +3807,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -3730,7 +3833,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -4096,8 +4200,21 @@ export function render(_url) {
     return { html, head : StyleSheet.toString(), bodyClassName : theme.classes.root };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -4121,7 +4238,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -4286,7 +4403,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -4309,14 +4426,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -4334,7 +4452,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -4785,8 +4904,21 @@ export function render(url) {
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -4810,7 +4942,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -5100,13 +5232,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -5134,10 +5273,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -5293,7 +5433,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -5316,14 +5456,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -5341,7 +5482,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -5529,8 +5671,21 @@ export function render(_url) {
     return { html };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -5554,7 +5709,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -5822,7 +5977,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -5845,14 +6000,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -5870,7 +6026,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -6116,8 +6273,21 @@ export function render(url) {
     return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -6141,7 +6311,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -6431,13 +6601,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -6465,10 +6642,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -6736,7 +6914,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -6759,14 +6937,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -6784,7 +6963,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -7004,8 +7184,21 @@ export function render(_url) {
     return { html };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -7029,7 +7222,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -7155,7 +7348,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -7178,14 +7371,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -7203,7 +7397,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -7479,8 +7674,21 @@ export function render(url) {
     return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -7504,7 +7712,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -7794,13 +8002,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -7828,10 +8043,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -7967,7 +8183,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -7990,14 +8206,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -8015,7 +8232,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -8080,6 +8298,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -8093,6 +8316,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -8202,7 +8430,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -8565,8 +8793,21 @@ export function render(_url) {
     return { html, head : StyleSheet.toString(), bodyClassName : theme.classes.root };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -8590,7 +8831,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -8774,7 +9015,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -8797,14 +9038,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -8822,7 +9064,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -8888,6 +9131,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -8901,6 +9149,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -9010,7 +9263,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -9457,8 +9710,21 @@ export function render(url) {
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -9482,7 +9748,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -9772,13 +10038,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -9806,10 +10079,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -9985,7 +10259,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -10008,14 +10282,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -10033,7 +10308,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -10099,6 +10375,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -10112,6 +10393,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -10221,7 +10507,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -10405,8 +10691,21 @@ export function render(_url) {
     return { html };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -10430,7 +10729,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -10717,7 +11016,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -10740,14 +11039,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -10765,7 +11065,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -10832,6 +11133,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -10845,6 +11151,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -10954,7 +11265,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -11195,8 +11506,21 @@ export function render(url) {
     return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -11220,7 +11544,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -11510,13 +11834,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -11544,10 +11875,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
@@ -11835,7 +12167,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -11858,14 +12190,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -11883,7 +12216,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -11951,6 +12285,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -11964,6 +12303,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -12073,7 +12417,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -12287,8 +12631,21 @@ export function render(_url) {
     return { html };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -12312,7 +12669,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -12457,7 +12814,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -12480,14 +12837,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by \`vite build --ssr\`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -12505,7 +12863,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
@@ -12574,6 +12933,11 @@ const port = Number(process.env.PORT) || 37521;
 
 process.env.NODE_ENV = 'production';
 
+/**
+ * Polls \`baseUrl\` until the server answers, for up to 6 seconds.
+ * @param {string} baseUrl
+ * @returns {Promise<boolean>} Whether the server answered.
+ */
 async function waitForServer(baseUrl) {
     for (let i = 0; i < 30; i++) {
         try {
@@ -12587,6 +12951,11 @@ async function waitForServer(baseUrl) {
     return false;
 }
 
+/**
+ * Maps a page URL to its output file (\`/about/\` -> \`about/index.html\`).
+ * @param {string} fullUrl
+ * @returns {string}
+ */
 function urlToFilePath(fullUrl) {
     const pathname = fullUrl.replace(/\\?.*$/, '').replace(/^https?:\\/\\/[^/]+/, '') || '/';
     const clean = pathname.replace(/^\\//, '').replace(/\\/$/, '') || 'index';
@@ -12696,7 +13065,7 @@ async function main() {
         resolved = entries.map((item) => resolveConfigEntry(item, baseUrl));
     } catch (err) {
         server.close();
-        console.error(err.message || err);
+        console.error(err instanceof Error ? err.message : err);
         process.exit(1);
     }
 
@@ -12965,8 +13334,21 @@ export function render(url) {
     return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
-  "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+  "src/lib/cn.js": "/**
+ * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ */
 
+/**
+ * @param {string} a
+ * @param {string|number} b
+ * @returns {string}
+ */
+const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
+
+/**
+ * @param {Array.<*>} classes
+ * @returns {string}
+ */
 const parse = (classes) => {
     let out = '';
 
@@ -12990,7 +13372,7 @@ const parse = (classes) => {
  * Accepts strings, numbers, arrays (nested supported) and objects whose keys
  * are included when their value is truthy. Falsy values are skipped.
  *
- * @param {...(string|number|Array|Object|null|undefined|boolean)} args - Class name values to join.
+ * @param {...ClassValue} args - Class name values to join.
  * @returns {string} The merged class name string.
  *
  * @example
@@ -13280,13 +13662,20 @@ export default function createRouter(routes, routerOptions = {}) {
 
 const DEFAULT_TITLE = 'test-app';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | test-app',
     '/about' : 'About | test-app'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\\/$/, '') || '/';
 }
@@ -13314,10 +13703,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);

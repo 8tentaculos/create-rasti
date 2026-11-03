@@ -2,13 +2,20 @@ import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = '{{NAME}}';
 
-/** Maps route paths to document titles. */
+/**
+ * Maps route paths to document titles.
+ * @type {Object.<string, string>}
+ */
 const PAGE_TITLES = {
     '/' : 'Home | {{NAME}}',
     '/about' : 'About | {{NAME}}'
 };
 
-/** Normalize path for lookup (strip trailing slash; '' -> '/'). */
+/**
+ * Normalize path for lookup (strip trailing slash; '' -> '/').
+ * @param {string} p
+ * @returns {string}
+ */
 function normalizePath(p) {
     return (p || '/').replace(/\/$/, '') || '/';
 }
@@ -36,10 +43,11 @@ export function getTitleForUrl(url) {
 /**
  * Create router bound to model (sets model.location on navigate).
  * Updates document.title on client when route changes.
- * @param {object} model - Model with location
- * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
+ * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
+    /** @param {import('./lib/router.js').Location} location */
     const action = (location) => {
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);

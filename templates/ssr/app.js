@@ -10,7 +10,7 @@ const templateHtml = isProduction
 
 const app = express();
 
-/** @type {object|undefined} Vite dev server instance */
+/** @type {import('vite').ViteDevServer|undefined} Vite dev server instance */
 let vite;
 if (!isProduction) {
     const { createServer } = await import('vite');
@@ -33,14 +33,15 @@ app.use('*all', async (req, res) => {
 
         /** @type {string} */
         let template;
-        /** @type {Function} Server render function */
+        /** @type {typeof import('./src/entry-server.js').render} */
         let render;
-        if (!isProduction) {
+        if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
             render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
         } else {
             template = templateHtml;
+            // @ts-ignore Built by `vite build --ssr`, so it only exists after a build.
             render = (await import('./dist/server/entry-server.js')).render;
         }
 
@@ -58,7 +59,8 @@ app.use('*all', async (req, res) => {
         }
 
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
-    } catch (e) {
+    } catch (error) {
+        const e = /** @type {Error} */ (error);
         vite?.ssrFixStacktrace(e);
         console.error(e.stack);
         // The stack helps in development but would expose server internals in production.
