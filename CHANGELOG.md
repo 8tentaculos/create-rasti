@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- micro-router: its typedefs used Closure function types (`function(string): boolean`), which TypeScript 7 doesn't parse; `Route`, `Router` and `Location` now resolve for TS consumers.
+- micro-router: a `popstate` from an in-page anchor jump (`#section`) no longer routes the same URL again and re-renders the page.
 - Generated `AGENTS.md` listed `npm start` and `npm run serve:static`, which don't exist; they are `npm run preview` and `npm run preview:static`.
 
 ## [0.0.2] - 2026-07-25

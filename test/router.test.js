@@ -260,6 +260,71 @@ describe('bindHistory', () => {
 
         expect(typeof router.bindHistory()).toBe('function');
     });
+
+    describe('popstate', () => {
+        let popstate;
+
+        /** Points the fake window at `url` and fires the bound popstate handler. */
+        const pop = (url) => {
+            const [pathname, search = ''] = url.split('?');
+            window.location.pathname = pathname;
+            window.location.search = search && `?${search}`;
+            popstate();
+        };
+
+        beforeEach(() => {
+            globalThis.window = {
+                location : { pathname : '/', search : '' },
+                history : { pushState : () => {}, replaceState : () => {} },
+                addEventListener : (_, fn) => { popstate = fn; },
+                removeEventListener : () => {}
+            };
+        });
+
+        afterEach(() => {
+            delete globalThis.window;
+        });
+
+        it('routes a popstate to another URL', () => {
+            const { router, calls } = buildRouter(['/', '/about']);
+            router.bindHistory();
+            go(router, '/');
+
+            pop('/about');
+
+            expect(calls.map(location => location.path)).toEqual(['/', '/about']);
+        });
+
+        it('ignores a popstate that keeps the path and query, as an anchor jump does', () => {
+            const { router, calls } = buildRouter(['/about']);
+            router.bindHistory();
+            go(router, '/about?a=1');
+
+            pop('/about?a=1');
+
+            expect(calls).toHaveLength(1);
+        });
+
+        it('compares without the fragment the URL was routed with', () => {
+            const { router, calls } = buildRouter(['/about']);
+            router.bindHistory();
+            go(router, '/about#section');
+
+            pop('/about');
+
+            expect(calls).toHaveLength(1);
+        });
+
+        it('routes a popstate that changes only the query', () => {
+            const { router, calls } = buildRouter(['/about']);
+            router.bindHistory();
+            go(router, '/about?a=1');
+
+            pop('/about?a=2');
+
+            expect(calls.map(location => location.query)).toEqual([{ a : '1' }, { a : '2' }]);
+        });
+    });
 });
 
 describe('redirect via replaceHistory', () => {

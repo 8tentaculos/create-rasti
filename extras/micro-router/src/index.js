@@ -1,25 +1,36 @@
 import { match, compile } from 'path-to-regexp';
 
 /**
+ * Route parameters by name. Wildcard parameters (e.g. `*rest`) are arrays of path segments.
+ * @typedef {Object.<string, (string|Array.<string>)>} Params
+ */
+
+/**
  * @typedef {Object} Location
  * @property {string} path - The route path pattern (e.g., `/user/:id`).
- * @property {Object.<string, (string|Array.<string>)>} params - Route parameters decoded from the URL path. Wildcard parameters (e.g. `*rest`) are arrays of path segments. Untrusted input: escape at the point of output.
+ * @property {Params} params - Route parameters decoded from the URL path. Wildcard parameters (e.g. `*rest`) are arrays of path segments. Untrusted input: escape at the point of output.
  * @property {Object.<string, string>} query - Query parameters parsed from the URL query string. Untrusted input, same as `params`.
- * @property {function(string): boolean} test - A function to test if a given URL matches this route. Returns `true` if the URL matches the route, `false` otherwise.
+ * @property {(url: string) => boolean} test - A function to test if a given URL matches this route. Returns `true` if the URL matches the route, `false` otherwise.
  */
 
 /**
  * @typedef {Object} Route
  * @property {string} path - The route path pattern (e.g., `/user/:id`).
- * @property {function(Location): *} action - The action function to call when the route matches. Receives a `Location` object as parameter.
+ * @property {(location: Location) => *} action - The action function to call when the route matches. Receives a `Location` object as parameter.
+ */
+
+/**
+ * @typedef {Object} NavigateOptions
+ * @property {boolean} [addToHistory=true] - Whether to add the navigation to the browser's history.
+ * @property {boolean} [replaceHistory=false] - Whether to replace the current history entry instead of adding a new one.
  */
 
 /**
  * @typedef {Object} Router
- * @property {function(string, Object=): *} navigate - Navigates to a given URL, matches a route, and returns its action result.
- * @property {function(string, Object=, Object=): string} createUrl - Creates a URL from a route path, parameters, and query string.
- * @property {function(HTMLElement): function(): void} delegateNavigation - Delegates navigation events for links with `data-router` attributes. Returns a cleanup function.
- * @property {function(): function(): void} bindHistory - Binds browser history changes to the navigation logic. Returns a cleanup function.
+ * @property {(url: string, options?: NavigateOptions) => *} navigate - Navigates to a given URL, matches a route, and returns its action result.
+ * @property {(path: string, params?: Params, query?: Object.<string, string>) => string} createUrl - Creates a URL from a route path, parameters, and query string.
+ * @property {(rootElement: HTMLElement) => () => void} delegateNavigation - Delegates navigation events for links with `data-router` attributes. Returns a cleanup function.
+ * @property {() => () => void} bindHistory - Binds browser history changes to the navigation logic. Returns a cleanup function.
  */
 
 /**
@@ -36,8 +47,17 @@ import { match, compile } from 'path-to-regexp';
 export default function createRouter(routes, routerOptions = {}) {
     const { baseUrl = '' } = routerOptions;
 
-    /** Compiled matchers, keyed by route path. Built on first match and reused afterwards. */
+    /**
+     * Compiled matchers, keyed by route path. Built on first match and reused afterwards.
+     * @type {Map<string, import('path-to-regexp').MatchFunction<Params>>}
+     */
     const matchers = new Map();
+
+    /**
+     * Path and query of the last URL routed, to tell a new page from an in-page anchor jump.
+     * @type {string|null}
+     */
+    let currentUrl = null;
 
     /**
      * Removes `baseUrl` from the start of a pathname.
@@ -58,7 +78,7 @@ export default function createRouter(routes, routerOptions = {}) {
      * Gets the pathname and query string from a given url.
      * The fragment is dropped: it takes no part in matching.
      * @param {string} url - The url to get the pathname and query string from.
-     * @returns {Object} - The pathname and query string.
+     * @returns {{ pathname: string, query: (string|undefined) }} - The pathname and query string.
      * @private
      */
     const getUrlParts = (url) => {
@@ -70,14 +90,14 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Gets the memoized matcher for a route path.
      * @param {string} routePath - The route path to match against.
-     * @returns {function(string): (Object|false)} - The matcher function.
+     * @returns {import('path-to-regexp').MatchFunction<Params>} - The matcher function.
      * @private
      */
     const getMatcher = (routePath) => {
         let matcher = matchers.get(routePath);
 
         if (!matcher) {
-            matcher = match(routePath, { decode : decodeURIComponent });
+            matcher = /** @type {import('path-to-regexp').MatchFunction<Params>} */ (match(routePath, { decode : decodeURIComponent }));
             matchers.set(routePath, matcher);
         }
 
@@ -88,7 +108,7 @@ export default function createRouter(routes, routerOptions = {}) {
      * Gets the match result from a given pathname and route path.
      * @param {string} pathname - The pathname to match.
      * @param {string} routePath - The route path to match.
-     * @returns {Object|false} - The match result, or `false` if no match is found.
+     * @returns {import('path-to-regexp').Match<Params>} - The match result, or `false` if no match is found.
      * @private
      */
     const getMatch = (pathname, routePath) => getMatcher(routePath)(pathname);
@@ -96,7 +116,7 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Matches a given url against the routes.
      * @param {string} url - The url to match.
-     * @returns {(function(): *)|null} - A function that calls the matched route's action with a `Location` object, or `null` if no match is found.
+     * @returns {(() => *)|null} - A function that calls the matched route's action with a `Location` object, or `null` if no match is found.
      * @private
      */
     const matchRoute = (url) => {
@@ -128,9 +148,7 @@ export default function createRouter(routes, routerOptions = {}) {
      * replace the entry it was reached through: `navigate('/login', { replaceHistory : true })`.
      *
      * @param {string} url - The path to navigate to, including query string.
-     * @param {Object} [options={}] - Options for navigation.
-     * @param {boolean} [options.addToHistory=true] - Whether to add the navigation to the browser's history.
-     * @param {boolean} [options.replaceHistory=false] - Whether to replace the current history entry instead of adding a new one.
+     * @param {NavigateOptions} [options={}] - Options for navigation.
      * @returns {*} The matched route action result, or `undefined` if no route matches. Async actions return a Promise.
      */
     const navigate = (url, options = {}) => {
@@ -139,6 +157,7 @@ export default function createRouter(routes, routerOptions = {}) {
         const matched = matchRoute(url);
 
         if (matched) {
+            currentUrl = url.split('#')[0];
             // Handle browser history
             if (addToHistory && typeof window !== 'undefined') {
                 window.history[replaceHistory ? 'replaceState' : 'pushState']({}, '', url);
@@ -155,7 +174,7 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Creates a URL from a route path, parameters, and query string.
      * @param {string} path - The route path (e.g., `/user/:id`).
-     * @param {Object.<string, (string|Array.<string>)>} [params={}] - Parameters to replace in the path (e.g., `{ id : '123' }` for `/user/:id`). Wildcard parameters take an array of segments.
+     * @param {Params} [params={}] - Parameters to replace in the path (e.g., `{ id : '123' }` for `/user/:id`). Wildcard parameters take an array of segments.
      * @param {Object.<string, string>} [query={}] - Query parameters to append to the URL (e.g., `{ page : '1', sort : 'name' }`).
      * @returns {string} - The generated URL with query parameters.
      */
@@ -172,9 +191,10 @@ export default function createRouter(routes, routerOptions = {}) {
      * Links the router cannot own (cross-origin, `target`, `download`, `rel="external"`)
      * are left to the browser's default handling.
      * @param {HTMLElement} rootElement - The root element to listen for click events.
-     * @returns {Function} - A function to undelegate the event listener.
+     * @returns {() => void} - A function to undelegate the event listener.
      */
     const delegateNavigation = (rootElement) => {
+        /** @param {MouseEvent} event */
         const handleClick = (event) => {
             if (
                 event.defaultPrevented ||
@@ -184,8 +204,10 @@ export default function createRouter(routes, routerOptions = {}) {
                 return;
             }
 
-            const target = event.target;
-            const anchor = typeof target?.closest === 'function' ? target.closest('a[data-router]') : null;
+            const target = /** @type {Element|null} */ (event.target);
+            const anchor = /** @type {HTMLAnchorElement|SVGAElement|null} */ (
+                typeof target?.closest === 'function' ? target.closest('a[data-router]') : null
+            );
 
             if (!anchor) return;
 
@@ -223,15 +245,19 @@ export default function createRouter(routes, routerOptions = {}) {
 
     /**
      * Binds browser history changes to the navigation logic.
-     * No-op outside the browser.
-     * @returns {Function} - A function to unbind the `popstate` event listener.
+     * A `popstate` that keeps the routed path and query, such as a jump to an in-page
+     * anchor, is ignored. No-op outside the browser.
+     * @returns {() => void} - A function to unbind the `popstate` event listener.
      */
     const bindHistory = () => {
         if (typeof window === 'undefined') return () => {};
 
         const handlePopState = () => {
+            const url = window.location.pathname + window.location.search;
+            // Routing the same URL again would re-render the page under the reader.
+            if (url === currentUrl) return;
             // On popstate, navigate to the current URL
-            navigate(window.location.pathname + window.location.search, { addToHistory : false });
+            navigate(url, { addToHistory : false });
         };
 
         window.addEventListener('popstate', handlePopState);
