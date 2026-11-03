@@ -58,8 +58,9 @@ export async function applyFeaturesInclude(ctx) {
     const { plan, targetDir } = ctx;
     const html = buildFeaturesHtml(plan);
 
-    const homePath = path.join(targetDir, 'src', 'components', 'Home.js');
-    await replaceInFile(homePath, html);
+    for (const ext of ['js', 'ts']) {
+        await replaceInFile(path.join(targetDir, 'src', 'components', `Home.${ext}`), html);
+    }
 
     const pagesDir = path.join(targetDir, 'src', 'pages');
     try {

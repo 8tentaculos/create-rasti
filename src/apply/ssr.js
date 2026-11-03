@@ -18,7 +18,7 @@ export async function applySsr(ctx) {
         ROUTE_ABOUT : routeAbout
     };
 
-    await copyTemplateDir('ssr', targetDir, context);
+    await copyTemplateDir('ssr', targetDir, context, { typescript : plan.features.typescript });
     await copyStyledTemplate('_base/App.js', path.join(targetDir, 'src', 'App.js'), context, plan);
     await copyStyledTemplate('_base/components/Button.js', path.join(targetDir, 'src', 'components', 'Button.js'), context, plan);
     await copyStyledTemplate('_base/components/Home.js', path.join(targetDir, 'src', 'components', 'Home.js'), context, plan);

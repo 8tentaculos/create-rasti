@@ -34,6 +34,14 @@ Styling options are mutually exclusive:
 
 Without either flag, the generated project uses plain CSS.
 
+## TypeScript
+
+**`--ts`** (or `--typescript`) writes the app in TypeScript, with every template and styling option:
+
+- The sources in `src/` are `.ts`, with components written as `Component` subclasses, the form Rasti types best.
+- `tsconfig.json` is strict, and Vite strips the types. `npm run typecheck` runs `tsc`, and so does `npm run build` before building.
+- The router, `cn` and icon components stay JavaScript typed with JSDoc, and so does the Express server in SSR projects. `tsc` checks them too (`checkJs`).
+
 ## Extras
 
 ### `--router`
@@ -85,6 +93,7 @@ The CLI writes an `AGENTS.md` to the generated project root with project-specifi
 | `--cssfun` | Add CSSFUN |
 | `--router` | Add micro-router |
 | `--icons [preset[,preset]]` | Add rasti-icons (default preset: `heroicons-outline`) |
+| `--ts` | Write the app in TypeScript (alias: `--typescript`) |
 | `--help` | Show help |
 
 `--ssr`/`--static` and `--tailwind`/`--cssfun` are mutually exclusive.

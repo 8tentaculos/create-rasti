@@ -4,6 +4,7 @@ import os from 'node:os';
 import { applyBase } from '../src/apply/base.js';
 import { applySsr } from '../src/apply/ssr.js';
 import { applyStatic } from '../src/apply/static.js';
+import { applyTypescript } from '../src/apply/typescript.js';
 import { applyTailwind } from '../src/apply/tailwind.js';
 import { applyCssfun } from '../src/apply/cssfun.js';
 import { applyRouter } from '../src/apply/router.js';
@@ -12,7 +13,7 @@ import { applyAgents } from '../src/apply/agents.js';
 
 const noSpinner = { start : () => {}, stop : () => {} };
 
-const baseFeatures = { tailwind : false, cssfun : false, icons : false, router : false };
+const baseFeatures = { tailwind : false, cssfun : false, icons : false, router : false, typescript : false };
 
 /**
  * Run the generation pipeline (mirroring src/apply/index.js) without icons
@@ -32,6 +33,7 @@ async function generate(tmpDir, plan) {
         await applyBase(ctx);
     }
 
+    if (plan.features.typescript) await applyTypescript(ctx);
     if (plan.features.tailwind) await applyTailwind(ctx);
     if (plan.features.cssfun) await applyCssfun(ctx);
     if (plan.features.router) await applyRouter(ctx);
@@ -83,6 +85,11 @@ const ROUTERS = [
     { id : 'no-router', features : {} },
     { id : 'router', features : { router : true } }
 ];
+// JavaScript labels carry no suffix, so their snapshots keep the names they had before TypeScript.
+const LANGUAGES = [
+    { id : '', features : {} },
+    { id : ' | ts', features : { typescript : true } }
+];
 
 describe('generated project matrix', () => {
     let tmpDir;
@@ -98,37 +105,40 @@ describe('generated project matrix', () => {
     for (const base of BASES) {
         for (const styling of STYLINGS) {
             for (const router of ROUTERS) {
-                const label = `${base} | ${styling.id} | ${router.id}`;
+                for (const language of LANGUAGES) {
+                    const label = `${base} | ${styling.id} | ${router.id}${language.id}`;
+                    const features = { ...baseFeatures, ...styling.features, ...router.features, ...language.features };
 
-                it(`matches snapshot: ${label}`, async () => {
-                    const plan = {
-                        name : 'test-app',
-                        base,
-                        features : { ...baseFeatures, ...styling.features, ...router.features },
-                        packageManager : 'npm'
-                    };
+                    it(`matches snapshot: ${label}`, async () => {
+                        const plan = {
+                            name : 'test-app',
+                            base,
+                            features,
+                            packageManager : 'npm'
+                        };
 
-                    const targetDir = await generate(tmpDir, plan);
-                    const tree = await collectTree(targetDir);
+                        const targetDir = await generate(tmpDir, plan);
+                        const tree = await collectTree(targetDir);
 
-                    expect(tree).toMatchSnapshot();
-                });
+                        expect(tree).toMatchSnapshot();
+                    });
 
-                it(`leaves no {{PLACEHOLDERS}}: ${label}`, async () => {
-                    const plan = {
-                        name : 'test-app',
-                        base,
-                        features : { ...baseFeatures, ...styling.features, ...router.features },
-                        packageManager : 'npm'
-                    };
+                    it(`leaves no {{PLACEHOLDERS}}: ${label}`, async () => {
+                        const plan = {
+                            name : 'test-app',
+                            base,
+                            features,
+                            packageManager : 'npm'
+                        };
 
-                    const targetDir = await generate(tmpDir, plan);
-                    const tree = await collectTree(targetDir);
+                        const targetDir = await generate(tmpDir, plan);
+                        const tree = await collectTree(targetDir);
 
-                    for (const [rel, content] of Object.entries(tree)) {
-                        expect(content, `unreplaced placeholder in ${rel}`).not.toMatch(/\{\{[A-Z_]+\}\}/);
-                    }
-                });
+                        for (const [rel, content] of Object.entries(tree)) {
+                            expect(content, `unreplaced placeholder in ${rel}`).not.toMatch(/\{\{[A-Z_]+\}\}/);
+                        }
+                    });
+                }
             }
         }
     }

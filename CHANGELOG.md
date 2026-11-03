@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `--ts` (alias `--typescript`) and a language prompt: the app is written in TypeScript, with a strict `tsconfig.json`, `npm run typecheck`, and a type check before `npm run build`. Components are `Component` subclasses; the router, `cn`, icons and the Node server stay JavaScript and are checked through `checkJs`.
+
 - Generated projects get the Agent Skills shipped with `rasti` (always) and `cssfun` (with `--cssfun`) in `.agents/skills/`, linked from `.claude/skills/`. They are copied from the CLI's own dependencies, so no network is needed.
 - Icon components take `size` (both dimensions) and `label` (accessible name; without it the icon is `aria-hidden`). Their props are typed inside the component and for its callers.
 

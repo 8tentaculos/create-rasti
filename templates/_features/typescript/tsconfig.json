@@ -1,0 +1,30 @@
+{
+    "compilerOptions" : {
+        "target" : "ES2022",
+        "module" : "ESNext",
+        "moduleResolution" : "bundler",
+        "lib" : ["ES2022", "DOM", "DOM.Iterable"],
+{{#if SSR}}
+        "types" : ["vite/client", "node"],
+{{#else}}
+        "types" : ["vite/client"],
+{{#endif}}
+        "allowJs" : true,
+        "checkJs" : true,
+        "allowImportingTsExtensions" : true,
+        "verbatimModuleSyntax" : true,
+        "erasableSyntaxOnly" : true,
+        "moduleDetection" : "force",
+        "useDefineForClassFields" : true,
+        "skipLibCheck" : true,
+        "noEmit" : true,
+        "strict" : true
+    },
+{{#if STATIC}}
+    "include" : ["src", "app.js", "server.js", "scripts", "static.config.js"]
+{{#elif SSR}}
+    "include" : ["src", "app.js", "server.js"]
+{{#else}}
+    "include" : ["src"]
+{{#endif}}
+}

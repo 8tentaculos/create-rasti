@@ -13,5 +13,9 @@ export const VERSIONS = {
     tailwindcss : '^4.3.3',
     tailwindVite : '^4.3.3',
     cssfun : '^0.4.0-alpha.0',
-    pathToRegexp : '^9.0.0'
+    pathToRegexp : '^9.0.0',
+    typescript : '^7.0.2',
+    typesNode : '^22.20.5',
+    typesExpress : '^5.0.6',
+    typesCompression : '^1.8.1'
 };

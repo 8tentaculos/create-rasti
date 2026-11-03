@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { copyTemplateFile, copyStyledTemplate, copyExtraFile } from '../utils/template.js';
+import { copyStyledTemplate, copyExtraFile } from '../utils/template.js';
 import { addDependencies } from '../utils/pkg.js';
 import { getBaseContext } from './description.js';
 import { VERSIONS } from '../versions.js';
@@ -29,7 +29,7 @@ export async function applyRouter(ctx) {
 
     await copyExtraFile('micro-router/src/index.js', path.join(targetDir, 'src', 'lib', 'router.js'));
 
-    await copyTemplateFile('_extras/router/router-setup.js', path.join(targetDir, 'src', 'router-setup.js'), context);
+    await copyStyledTemplate('_extras/router/router-setup.js', path.join(targetDir, 'src', 'router-setup.js'), context, plan);
 
     const componentsDir = path.join(targetDir, 'src', 'components');
     await fs.mkdir(componentsDir, { recursive : true });

@@ -15,6 +15,7 @@ export function parseArgs(argv) {
         cssfun : false,
         icons : null,
         router : false,
+        typescript : false,
         help : false
     };
 
@@ -43,6 +44,8 @@ export function parseArgs(argv) {
             }
         } else if (arg === '--router') {
             args.router = true;
+        } else if (arg === '--ts' || arg === '--typescript') {
+            args.typescript = true;
         } else if (!arg.startsWith('-')) {
             // Positional argument - project name
             if (!args.name) {

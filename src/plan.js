@@ -26,7 +26,8 @@ export function createPlan(options) {
             tailwind : options.tailwind || false,
             cssfun : options.cssfun || false,
             icons : normalizeIconSets(options.icons),
-            router : options.router || false
+            router : options.router || false,
+            typescript : options.typescript || false
         },
         packageManager : detectPackageManager()
     };

@@ -38,7 +38,7 @@ app.use('*all', async (req, res) => {
         if (vite) {
             template = await fs.readFile('./index.html', 'utf-8');
             template = await vite.transformIndexHtml(url, template);
-            render = (await vite.ssrLoadModule('/src/entry-server.js')).render;
+            render = (await vite.ssrLoadModule('/src/entry-server.{{SRC_EXT}}')).render;
         } else {
             template = templateHtml;
             // @ts-ignore Built by `vite build --ssr`, so it only exists after a build.

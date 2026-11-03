@@ -96,13 +96,16 @@ export async function copyTemplateFile(templatePath, destPath, context = {}) {
 
 /**
  * Copy a template directory to the target, processing placeholders in all files.
+ * Of a `File.js` / `File.ts` pair only the one in the project's language is copied.
  * @param {string} templateName - Name of the template directory (spa, ssr)
  * @param {string} targetDir - Target directory path
  * @param {object} context - Values to replace placeholders
+ * @param {object} [options]
+ * @param {boolean} [options.typescript=false] - Whether the project is written in TypeScript
  */
-export async function copyTemplateDir(templateName, targetDir, context = {}) {
+export async function copyTemplateDir(templateName, targetDir, context = {}, options = {}) {
     const templateDir = path.join(TEMPLATES_DIR, templateName);
-    await copyDirRecursive(templateDir, targetDir, context);
+    await copyDirRecursive(templateDir, targetDir, context, options.typescript ? '.ts' : '.js');
 }
 
 /**
@@ -110,18 +113,24 @@ export async function copyTemplateDir(templateName, targetDir, context = {}) {
  * @param {string} src - Source directory
  * @param {string} dest - Destination directory
  * @param {object} context - Values to replace placeholders
+ * @param {string} sourceExt - Extension kept from a `.js` / `.ts` pair
  */
-async function copyDirRecursive(src, dest, context) {
+async function copyDirRecursive(src, dest, context, sourceExt) {
     await fs.mkdir(dest, { recursive : true });
 
     const entries = await fs.readdir(src, { withFileTypes : true });
+    const names = new Set(entries.map(entry => entry.name));
 
     for (const entry of entries) {
+        const ext = path.extname(entry.name);
+        const pair = { '.js' : '.ts', '.ts' : '.js' }[ext];
+        if (pair && ext !== sourceExt && names.has(entry.name.slice(0, -ext.length) + pair)) continue;
+
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
 
         if (entry.isDirectory()) {
-            await copyDirRecursive(srcPath, destPath, context);
+            await copyDirRecursive(srcPath, destPath, context, sourceExt);
         } else {
             if (isTextFile(entry.name)) {
                 let content = await fs.readFile(srcPath, 'utf-8');
@@ -157,30 +166,38 @@ function isTextFile(filename) {
 }
 
 /**
- * Copy a template file, auto-resolving styling variant by convention.
+ * Copy a template file, auto-resolving styling and language variants by convention.
  * Given `dir/File.js` and plan with tailwind, looks for `dir/File-tailwind.js` first.
  * Falls back to `dir/File-cssfun.js` if cssfun, then `dir/File.js`.
+ * For a TypeScript project the `.ts` variants are tried first, in the same order;
+ * a file with no `.ts` template stays JavaScript. The destination takes the extension
+ * of the template copied.
  * @param {string} templatePath - Base template path (e.g. '_extras/router/App.js')
  * @param {string} destPath - Absolute destination path
  * @param {object} context - Values to replace placeholders
- * @param {object} plan - Project plan (checks plan.features.tailwind / cssfun)
+ * @param {object} plan - Project plan (checks plan.features.tailwind / cssfun / typescript)
  */
 export async function copyStyledTemplate(templatePath, destPath, context, plan) {
     const ext = path.extname(templatePath);
     const base = templatePath.slice(0, -ext.length);
+    const style = plan.features.tailwind ? '-tailwind' : (plan.features.cssfun ? '-cssfun' : '');
+    const exts = plan.features.typescript ? ['.ts', ext] : [ext];
+    const candidates = exts.flatMap(candidateExt => [
+        ...(style ? [`${base}${style}${candidateExt}`] : []),
+        `${base}${candidateExt}`
+    ]);
 
     let resolvedPath = templatePath;
-    if (plan.features.tailwind) {
-        const candidate = `${base}-tailwind${ext}`;
-        const full = path.join(TEMPLATES_DIR, candidate);
-        try { await fs.access(full); resolvedPath = candidate; } catch { /* fallback to base */ }
-    } else if (plan.features.cssfun) {
-        const candidate = `${base}-cssfun${ext}`;
-        const full = path.join(TEMPLATES_DIR, candidate);
-        try { await fs.access(full); resolvedPath = candidate; } catch { /* fallback to base */ }
+    for (const candidate of candidates) {
+        try {
+            await fs.access(path.join(TEMPLATES_DIR, candidate));
+            resolvedPath = candidate;
+            break;
+        } catch { /* try the next candidate */ }
     }
 
-    await copyTemplateFile(resolvedPath, destPath, context);
+    const resolvedDest = destPath.slice(0, -path.extname(destPath).length) + path.extname(resolvedPath);
+    await copyTemplateFile(resolvedPath, resolvedDest, context);
 }
 
 /**

@@ -15,6 +15,8 @@ const FAVICON_SRC = CDN_BASE + '/favicon.svg';
 export function getBaseContext(plan) {
     return {
         NAME : plan.name,
+        TS : plan.features.typescript ? 'true' : '',
+        SRC_EXT : plan.features.typescript ? 'ts' : 'js',
         DESCRIPTION : getDescription(plan),
         LOGO_SRC,
         LOGO_LIGHT_SRC,

@@ -47,6 +47,23 @@ export async function runPrompts(defaults = {}) {
     options.ssr = base === 'ssr' || base === 'static';
     options.static = base === 'static';
 
+    // Language
+    const language = await p.select({
+        message : 'Select language',
+        options : [
+            { value : 'js', label : 'JavaScript', hint : 'Typed with JSDoc' },
+            { value : 'ts', label : 'TypeScript' }
+        ],
+        initialValue : defaults.typescript ? 'ts' : 'js'
+    });
+
+    if (p.isCancel(language)) {
+        p.cancel('Operation cancelled.');
+        return null;
+    }
+
+    options.typescript = language === 'ts';
+
     // Styling option
     const styling = await p.select({
         message : 'Select styling',

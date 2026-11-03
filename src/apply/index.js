@@ -2,6 +2,7 @@ import path from 'node:path';
 import { applyBase } from './base.js';
 import { applySsr } from './ssr.js';
 import { applyStatic } from './static.js';
+import { applyTypescript } from './typescript.js';
 import { applyTailwind } from './tailwind.js';
 import { applyCssfun } from './cssfun.js';
 import { applyIcons } from './icons.js';
@@ -37,6 +38,12 @@ export async function applyPlan(plan) {
         }
 
         spinner.stop('Project created');
+
+        if (plan.features.typescript) {
+            spinner.start('Adding TypeScript...');
+            await applyTypescript(ctx);
+            spinner.stop('TypeScript added');
+        }
 
         if (plan.features.tailwind) {
             spinner.start('Adding Tailwind CSS...');
@@ -86,6 +93,7 @@ export async function applyPlan(plan) {
 function logSummary(plan) {
     const features = [];
 
+    if (plan.features.typescript) features.push('TypeScript');
     if (plan.features.tailwind) features.push('Tailwind CSS');
     if (plan.features.cssfun) features.push('CSSFUN');
     if (plan.features.icons) {

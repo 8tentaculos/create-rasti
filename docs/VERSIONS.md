@@ -2,7 +2,7 @@
 
 All versions pinned in generated projects live in [`src/versions.js`](../src/versions.js).
 
-Base templates (`spa/package.json`, `ssr/package.json`) reference them through `{{*_VERSION}}` placeholders, resolved by `getBaseContext(plan)` in `src/apply/description.js`. Feature appliers (`tailwind.js`, `cssfun.js`, `router.js`) read the constants directly when calling `addDependencies`.
+Base templates (`spa/package.json`, `ssr/package.json`) reference them through `{{*_VERSION}}` placeholders, resolved by `getBaseContext(plan)` in `src/apply/description.js`. Feature appliers (`tailwind.js`, `cssfun.js`, `router.js`, `typescript.js`) read the constants directly when calling `addDependencies`.
 
 ## Values outside `versions.js`
 
@@ -22,5 +22,6 @@ Base templates (`spa/package.json`, `ssr/package.json`) reference them through `
    - SPA: `npm run dev`, `npm run build`, `npm run preview`
    - SSR: `npm run dev`, `npm run build`, `npm run preview`
    - Static: `npm run build:static`, `npm run preview:static`
+   - With `--ts`: `npm run typecheck` as well. A `typescript` or `@types/*` bump can surface new errors in the templates.
 
 Dev dependencies of this repo (`@clack/prompts`, `eslint`, etc.) do not affect generated output and can be bumped independently.

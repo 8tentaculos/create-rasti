@@ -70,6 +70,7 @@ Options:
                      Repeat flag or use comma-separated list. Multiple sets are written under src/icons/<preset>/ each;
                      a single set uses src/icons/ directly.
   --router     Add micro-router (universal router, two pages and links)
+  --ts         Write the app in TypeScript (alias: --typescript)
   --help       Show this help message
 
 Examples:
@@ -85,6 +86,7 @@ Examples:
   npm create rasti my-app --icons pixelarticons         # SPA with pixelarticons in src/icons
   npm create rasti my-app --icons heroicons-solid,heroicons-outline  # Multiple sets in subfolders under src/icons
   npm create rasti my-app --router     # SPA with two pages and universal router
+  npm create rasti my-app --ssr --ts   # SSR project in TypeScript
 
 Note: --tailwind and --cssfun are mutually exclusive.
 `);
