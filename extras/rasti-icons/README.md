@@ -42,17 +42,27 @@ node bin/rasti-icons.js \
 
 ## Generated components
 
-Each SVG file becomes a Rasti component. The generated component accepts optional `props.className`, `props.width`, and `props.height`. If width or height is not provided, the original SVG dimensions are used.
+Each SVG file becomes a Rasti component. All props are optional:
+
+| Prop | Description |
+|---|---|
+| `className` | Class of the `<svg>` element. Without it, no `class` attribute is written. |
+| `size` | Width and height. Defaults to the original SVG dimensions. |
+| `width`, `height` | Override `size` for one dimension. |
+| `label` | Accessible name: renders `role="img"` and `aria-label`. Without it the icon is decorative and gets `aria-hidden="true"`. |
 
 ```javascript
+import { Component } from 'rasti';
 import Heart from './icons/Heart.js';
 
-// Mount with default size.
-Heart.mount({}, container);
+// In a template — decorative, at the original size.
+const Liked = Component.create`<p><${Heart} className="icon" /> Liked</p>`;
 
-// Mount with custom class and size.
-Heart.mount({ className : 'icon icon-red', width : '32', height : '32' }, container);
+// Standalone — custom size, with an accessible name.
+Heart.mount({ size : 32, label : 'Favorite' }, container);
 ```
+
+Icons follow the text color: hardcoded black fills and strokes are turned into `currentColor`. The generator also drops what an inline icon doesn't need — XML prolog, comments, `title`, `desc`, namespace declarations and unreferenced ids.
 
 Icon filenames are converted from `kebab-case.svg` to `PascalCase.js`.
 

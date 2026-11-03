@@ -52,10 +52,12 @@ import Heart from './icons/Heart.js';
 
 const LikeButton = Component.create`
     <button>
-        <${Heart} className="icon" width="24" height="24" />
+        <${Heart} className="icon" size="20" label="Like" />
     </button>
 `;
 ```
+
+Icons are decorative (`aria-hidden`) unless they get a `label`. See [rasti-icons](extras/rasti-icons/README.md) for all props.
 
 A single preset writes components directly to `src/icons/`. Multiple presets write each set under `src/icons/<preset>/`.
 
