@@ -10,49 +10,57 @@ import { createAppRouter } from './router-setup.js';
  * @typedef {Object} AppState
  * @property {number} count
 {{#if ROUTER}}
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
 {{#endif}}
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create`
-    <div class="app">
-        <${Header} />
+class App extends Component {
 {{#if ROUTER}}
-        ${({ state, partial }) => state.location?.test('/') ?
-            partial`<${Home} count="${({ state }) => state.count}" handleIncrement="${({ state }) => () => { state.count++; }}" />` :
-            partial`<${About} />`}
-{{#else}}
-        <${Home} count="${({ state }) => state.count}" handleIncrement="${({ state }) => () => { state.count++; }}" />
-{{#endif}}
-    </div>
-{{#if ROUTER}}
-`.extend({
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
 {{#else}}
-`.extend({
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
 {{#endif}}
+
+    /** Created once per instance, so `Home` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html`
+            <div class="app">
+                <${Header} />
+{{#if ROUTER}}
+                ${this.state.location?.test('/') ?
+                    this.html`<${Home} count="${this.state.count}" handleIncrement=${this.handleIncrement} />` :
+                    this.html`<${About} />`}
+{{#else}}
+                <${Home} count="${this.state.count}" handleIncrement=${this.handleIncrement} />
+{{#endif}}
+            </div>
+        `;
+    }
+}
 
 export default App;

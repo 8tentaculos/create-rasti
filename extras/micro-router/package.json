@@ -6,7 +6,7 @@
     "type" : "module",
     "main" : "src/index.js",
     "dependencies" : {
-        "path-to-regexp" : "^8.0.0"
+        "path-to-regexp" : "^9.0.0"
     },
     "license" : "MIT"
 }

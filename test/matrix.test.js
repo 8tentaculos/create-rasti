@@ -8,16 +8,15 @@ import { applyTailwind } from '../src/apply/tailwind.js';
 import { applyCssfun } from '../src/apply/cssfun.js';
 import { applyRouter } from '../src/apply/router.js';
 import { applyFeaturesInclude } from '../src/apply/featuresInclude.js';
-import { getBaseContext } from '../src/apply/description.js';
-import { copyTemplateFile } from '../src/utils/template.js';
+import { applyAgents } from '../src/apply/agents.js';
 
 const noSpinner = { start : () => {}, stop : () => {} };
 
 const baseFeatures = { tailwind : false, cssfun : false, icons : false, router : false };
 
 /**
- * Run the generation pipeline (mirroring src/apply/index.js) without the network
- * fetch of AGENTS-RASTI.md and without icons (preset/network dependent).
+ * Run the generation pipeline (mirroring src/apply/index.js) without icons
+ * (preset/network dependent).
  * @param {string} tmpDir - Temp root
  * @param {object} plan - Project plan
  * @returns {Promise<string>} targetDir
@@ -39,22 +38,15 @@ async function generate(tmpDir, plan) {
 
     await applyFeaturesInclude(ctx);
 
-    const agentsContext = {
-        ...getBaseContext(plan),
-        SSR : (plan.base === 'ssr' || plan.base === 'static') ? 'true' : '',
-        STATIC : plan.base === 'static' ? 'true' : '',
-        TAILWIND : plan.features.tailwind ? 'true' : '',
-        CSSFUN : plan.features.cssfun ? 'true' : '',
-        ROUTER : plan.features.router ? 'true' : '',
-        ICONS : plan.features.icons ? 'true' : ''
-    };
-    await copyTemplateFile('AGENTS.md', path.join(targetDir, 'AGENTS.md'), agentsContext);
+    await applyAgents(ctx);
 
     return targetDir;
 }
 
 /**
  * Collect every generated file as a sorted { relativePath: content } map.
+ * Agent skills are copied verbatim from their packages, so their files are
+ * recorded by path only; symlinks are recorded by target.
  * @param {string} dir - Root directory
  * @returns {Promise<Record<string, string>>}
  */
@@ -65,11 +57,13 @@ async function collectTree(dir) {
         const entries = await fs.readdir(current, { withFileTypes : true });
         for (const e of entries) {
             const full = path.join(current, e.name);
-            if (e.isDirectory()) {
+            const rel = path.relative(dir, full).split(path.sep).join('/');
+            if (e.isSymbolicLink()) {
+                files[rel] = `-> ${await fs.readlink(full)}`;
+            } else if (e.isDirectory()) {
                 await walk(full);
             } else {
-                const rel = path.relative(dir, full).split(path.sep).join('/');
-                files[rel] = await fs.readFile(full, 'utf-8');
+                files[rel] = rel.startsWith('.agents/skills/') ? '<skill file>' : await fs.readFile(full, 'utf-8');
             }
         }
     }

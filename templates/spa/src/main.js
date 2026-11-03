@@ -8,8 +8,7 @@ import './style.css';
 {{#endif}}
 
 {{#if ROUTER}}
-const options = { url : window.location.pathname + window.location.search };
-App.mount(options, document.querySelector('#app'));
+App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
 {{#else}}
 App.mount({}, document.querySelector('#app'));
 {{#endif}}

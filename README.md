@@ -69,7 +69,9 @@ A single preset writes components directly to `src/icons/`. Multiple presets wri
 
 SVGs are downloaded from GitHub when the project is generated, so this option requires an internet connection.
 
-The CLI writes an `AGENTS.md` to the generated project root with project-specific context (stack, commands, architecture, conventions). It also tries to fetch Rasti's `AGENTS.md` as `AGENTS-RASTI.md`; if that request fails, project generation continues without it.
+## Agents
+
+The CLI writes an `AGENTS.md` to the generated project root with project-specific context (stack, commands, architecture, conventions). It also installs the [Agent Skills](https://agentskills.io) that ship with the libraries the project uses — `rasti` always, `cssfun` with `--cssfun` — in `.agents/skills/`, linked from `.claude/skills/`. The skills come from the CLI's own copy of each package, on the same version range the project depends on, so no network is needed.
 
 ## Flags
 

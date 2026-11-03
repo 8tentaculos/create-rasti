@@ -40,21 +40,13 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '{{ROUTE_ABOUT}}',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '{{ROUTE_ABOUT}}', action }
+    ]);
 }

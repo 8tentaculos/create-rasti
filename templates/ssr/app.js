@@ -53,9 +53,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\s\S]*?<\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -63,8 +60,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 

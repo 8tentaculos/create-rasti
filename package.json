@@ -40,14 +40,16 @@
     "author": "Alberto Masuelli <alberto.masuelli@gmail.com> (https://github.com/8tentaculos)",
     "license": "MIT",
     "dependencies": {
-        "@clack/prompts": "^0.9.1"
+        "@clack/prompts": "^1.8.1",
+        "cssfun": "^0.4.0-alpha.0",
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.34.0",
-        "eslint": "^9.34.0",
-        "globals": "^16.3.0",
-        "path-to-regexp": "^8.4.2",
-        "vitest": "^3.0.0"
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.13.0",
+        "globals": "^17.13.0",
+        "path-to-regexp": "^9.0.0",
+        "vitest": "^5.0.5"
     },
     "engines": {
         "node": ">=22"

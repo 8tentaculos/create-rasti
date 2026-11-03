@@ -14,19 +14,19 @@ Single page app powered by [Rasti](https://rasti.js.org) {{RASTI_VERSION}} + [Vi
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-{{#if SSR}}
-npm start        # start Express server (requires npm run build first)
-{{#endif}}
 {{#if STATIC}}
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 {{#endif}}
 ```
 
 ## Architecture
 
-Components live in `src/components/` and are [Rasti components](./AGENTS-RASTI.md) defined with `Component.create`.
-`App` is the root component — it owns `this.state` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+`App` (`src/App.js`) is the root component, written as a `Component` subclass: it owns `this.state` (a Rasti `Model`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in `src/components/` and are written with `Component.create`.
+{{#if SSR}}
+`src/entry-server.js` renders `App` to HTML for each request and `src/entry-client.js` hydrates it in the browser; `app.js` is the Express server that joins them.
+{{#endif}}
 {{#if CSSFUN}}
 Theming uses `src/theme.js` (light/dark via `data-color-scheme` on `<html>`; CSS variables prefixed `--fun-*`).
 {{#endif}}
@@ -36,13 +36,24 @@ Routing is handled by `src/router-setup.js` — routes update `state.location`; 
 {{#if STATIC}}
 Routes to pre-render are listed in `static.config.js`.
 {{#endif}}
+{{#if ICONS}}
+Icon components generated from SVG live in `src/icons/`.
+{{#endif}}
 
 ## Conventions
 
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: `{ key : value }`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props `handle*` (`handleIncrement`), never `on*`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in `.agents/skills/` (linked from `.claude/skills/`):
+
+- `rasti` — components, template interpolations, lifecycle hooks, models and server-side rendering
+{{#if CSSFUN}}
+- `cssfun` — style sheets, selectors, at-rules, themes and server-side rendering
+{{#endif}}
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from `node_modules/<library>/skills/<library>`.

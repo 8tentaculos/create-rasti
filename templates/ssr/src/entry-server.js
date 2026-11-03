@@ -10,40 +10,46 @@ import { StyleSheet } from 'cssfun';
 
 {{#if ROUTER}}
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
- * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * Serializes the render options for an inline `<script>`, as unicode escapes for the
+ * characters that could close the tag (`</script>`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
  */
-export function render(url) {
-    Component.resetUid();
-    const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-{{#if CSSFUN}}
-    const styles = StyleSheet.toString();
-    const script = `<script>window.__APP_OPTIONS__=${JSON.stringify(options)}</script>`;
-    return { html, head : styles + script, title, bodyClassName : theme.classes.root };
-{{#else}}
-    const script = `<script>window.__APP_OPTIONS__=${JSON.stringify(options)}</script>`;
-    return { html, head : script, title };
-{{#endif}}
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\u2028\u2029]/g,
+        char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
+    );
 }
-{{#else}}
+
+{{#endif}}
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
- * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * Returns the pieces `app.js` injects into the `index.html` template.
+ * @param {string} {{#if ROUTER}}url{{#else}}_url{{#endif}} - Request URL
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
-export function render(_url) {
+export function render({{#if ROUTER}}url{{#else}}_url{{#endif}}) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
+{{#if ROUTER}}
+    const options = { url };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = `<script>window.__APP_OPTIONS__=${serializeOptions(options)}</script>`;
 {{#if CSSFUN}}
-    const styles = StyleSheet.toString();
-    return { html, head : styles, bodyClassName : theme.classes.root };
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
+{{#else}}
+    return { html, head : script, title : getTitleForUrl(url) };
+{{#endif}}
+{{#else}}
+    const html = new App().toString();
+{{#if CSSFUN}}
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString(), bodyClassName : theme.classes.root };
 {{#else}}
     return { html };
 {{#endif}}
-}
 {{#endif}}
+}

@@ -2,6 +2,15 @@
 
 exports[`generated project matrix > matches snapshot: spa | cssfun | no-router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -26,7 +35,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -38,8 +47,8 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 
 ## Conventions
@@ -47,16 +56,22 @@ Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -78,11 +93,11 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "cssfun": "^0.1.0",
-        "rasti": "^4.1.0"
+        "cssfun": "^0.4.0-alpha.0",
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "vite": "^7.0.0"
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -126,19 +141,29 @@ const { classes } = css({
  * @property {number} count
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
-    onCreate(options = {}) {
+class App extends Component {
+    onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -338,7 +363,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -475,6 +500,15 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: spa | cssfun | router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -499,7 +533,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -511,8 +545,8 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
@@ -521,16 +555,22 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -552,12 +592,12 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "cssfun": "^0.1.0",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0"
+        "cssfun": "^0.4.0-alpha.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "vite": "^7.0.0"
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -601,37 +641,47 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -879,7 +929,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -1188,8 +1238,7 @@ import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-const options = { url : window.location.pathname + window.location.search };
-App.mount(options, document.querySelector('#app'));
+App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
 ",
   "src/router-setup.js": "import createRouter from './lib/router.js';
 
@@ -1233,23 +1282,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -1325,6 +1366,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: spa | plain | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -1349,7 +1394,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -1361,24 +1406,29 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 
 ## Conventions
 
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -1400,10 +1450,10 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "rasti": "^4.1.0"
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "vite": "^7.0.0"
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -1417,19 +1467,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -1484,7 +1544,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -1730,6 +1790,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: spa | plain | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -1754,7 +1818,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -1766,8 +1830,8 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
 ## Conventions
@@ -1775,16 +1839,21 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -1806,11 +1875,11 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0"
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "vite": "^7.0.0"
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -1824,37 +1893,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -1930,7 +2009,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -2238,8 +2317,7 @@ export default function createRouter(routes, routerOptions = {}) {
   "src/main.js": "import App from './App.js';
 import './style.css';
 
-const options = { url : window.location.pathname + window.location.search };
-App.mount(options, document.querySelector('#app'));
+App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
 ",
   "src/router-setup.js": "import createRouter from './lib/router.js';
 
@@ -2283,23 +2361,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/style.css": ":root {
@@ -2487,6 +2557,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: spa | tailwind | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -2511,7 +2585,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -2523,24 +2597,29 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 
 ## Conventions
 
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -2562,12 +2641,12 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "rasti": "^4.1.0"
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -2581,19 +2660,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -2678,7 +2767,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -2782,6 +2871,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: spa | tailwind | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -2806,7 +2899,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -2818,8 +2911,8 @@ npm run preview  # preview production build
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
 ## Conventions
@@ -2827,16 +2920,21 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "index.html": "<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -2858,13 +2956,13 @@ See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creati
         "preview": "vite preview"
     },
     "dependencies": {
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0"
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -2878,37 +2976,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -3012,7 +3120,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -3320,8 +3428,7 @@ export default function createRouter(routes, routerOptions = {}) {
   "src/main.js": "import App from './App.js';
 import './style.css';
 
-const options = { url : window.location.pathname + window.location.search };
-App.mount(options, document.querySelector('#app'));
+App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
 ",
   "src/router-setup.js": "import createRouter from './lib/router.js';
 
@@ -3365,23 +3472,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -3427,6 +3526,15 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | cssfun | no-router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -3451,7 +3559,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -3459,13 +3567,13 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 
 ## Conventions
@@ -3473,10 +3581,16 @@ Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -3533,9 +3647,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -3543,8 +3654,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -3554,7 +3666,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -3578,15 +3690,15 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "cssfun": "^0.1.0",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "cssfun": "^0.4.0-alpha.0",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -3638,19 +3750,29 @@ const { classes } = css({
  * @property {number} count
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
-    onCreate(options = {}) {
+class App extends Component {
+    onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -3850,7 +3972,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -3874,7 +3996,7 @@ import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -3884,15 +4006,16 @@ import { StyleSheet } from 'cssfun';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
-    const styles = StyleSheet.toString();
-    return { html, head : styles, bodyClassName : theme.classes.root };
+    const html = new App().toString();
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString(), bodyClassName : theme.classes.root };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -4006,6 +4129,15 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | cssfun | router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -4030,7 +4162,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -4038,13 +4170,13 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
@@ -4053,10 +4185,16 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -4113,9 +4251,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -4123,8 +4258,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -4134,7 +4270,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -4158,16 +4294,16 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "cssfun": "^0.1.0",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "cssfun": "^0.4.0-alpha.0",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -4219,37 +4355,47 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -4497,7 +4643,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -4521,7 +4667,8 @@ import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -4531,19 +4678,33 @@ import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const styles = StyleSheet.toString();
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : styles + script, title, bodyClassName : theme.classes.root };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -4873,23 +5034,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -4965,6 +5118,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | plain | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -4989,7 +5146,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -4997,23 +5154,28 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 
 ## Conventions
 
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -5070,9 +5232,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -5080,8 +5239,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -5091,7 +5251,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -5117,14 +5277,14 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -5146,19 +5306,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -5213,7 +5383,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -5236,7 +5406,7 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -5244,13 +5414,14 @@ import App from './App.js';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
+    const html = new App().toString();
     return { html };
 }
 ",
@@ -5475,6 +5646,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | plain | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -5499,7 +5674,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -5507,13 +5682,13 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
 ## Conventions
@@ -5521,10 +5696,15 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -5581,9 +5761,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -5591,8 +5768,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -5602,7 +5780,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -5628,15 +5806,15 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -5658,37 +5836,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -5764,7 +5952,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -5787,7 +5975,8 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -5795,18 +5984,32 @@ import App from './App.js';
 import { getTitleForUrl } from './router-setup.js';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : script, title };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -6136,23 +6339,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/style.css": ":root {
@@ -6340,6 +6535,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | tailwind | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -6364,7 +6563,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -6372,23 +6571,28 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 
 ## Conventions
 
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -6445,9 +6649,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -6455,8 +6656,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -6466,7 +6668,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -6492,16 +6694,16 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "cross-env": "^7.0.3",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "cross-env": "^10.1.0",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -6523,19 +6725,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -6620,7 +6832,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -6643,7 +6855,7 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -6651,13 +6863,14 @@ import App from './App.js';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
+    const html = new App().toString();
     return { html };
 }
 ",
@@ -6740,6 +6953,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: ssr | tailwind | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -6764,7 +6981,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -6772,13 +6989,13 @@ Server-side rendered app with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 
 ## Conventions
@@ -6786,10 +7003,15 @@ Routing is handled by \`src/router-setup.js\` — routes update \`state.location
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -6846,9 +7068,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -6856,8 +7075,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -6867,7 +7087,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -6893,17 +7113,17 @@ export default app;
         "preview": "cross-env NODE_ENV=production node server"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "cross-env": "^7.0.3",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "cross-env": "^10.1.0",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -6925,37 +7145,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -7059,7 +7289,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -7082,7 +7312,8 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -7090,18 +7321,32 @@ import App from './App.js';
 import { getTitleForUrl } from './router-setup.js';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : script, title };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -7431,23 +7676,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about', action }
+    ]);
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -7493,6 +7730,15 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | cssfun | no-router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -7517,7 +7763,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -7525,15 +7771,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 Routes to pre-render are listed in \`static.config.js\`.
 
@@ -7542,10 +7788,16 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -7602,9 +7854,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -7612,8 +7861,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -7623,7 +7873,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -7649,15 +7899,15 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "cssfun": "^0.1.0",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "cssfun": "^0.4.0-alpha.0",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -7891,19 +8141,29 @@ const { classes } = css({
  * @property {number} count
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
-    onCreate(options = {}) {
+class App extends Component {
+    onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -8103,7 +8363,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -8127,7 +8387,7 @@ import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -8137,15 +8397,16 @@ import { StyleSheet } from 'cssfun';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
-    const styles = StyleSheet.toString();
-    return { html, head : styles, bodyClassName : theme.classes.root };
+    const html = new App().toString();
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString(), bodyClassName : theme.classes.root };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -8275,6 +8536,15 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | cssfun | router 1`] = `
 {
+  ".agents/skills/cssfun/SKILL.md": "<skill file>",
+  ".agents/skills/cssfun/references/advanced.md": "<skill file>",
+  ".agents/skills/cssfun/references/ssr.md": "<skill file>",
+  ".agents/skills/cssfun/references/typescript.md": "<skill file>",
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/cssfun": "-> ../../.agents/skills/cssfun",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -8299,7 +8569,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -8307,15 +8577,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
@@ -8325,10 +8595,16 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+- \`cssfun\` — style sheets, selectors, at-rules, themes and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -8385,9 +8661,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -8395,8 +8668,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -8406,7 +8680,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -8432,16 +8706,16 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "cssfun": "^0.1.0",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "cssfun": "^0.4.0-alpha.0",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -8675,37 +8949,47 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component with CSS-in-JS global styles.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="\${classes.root}">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="\${classes.root}">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -8953,7 +9237,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -8977,7 +9261,8 @@ import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -8987,19 +9272,33 @@ import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const styles = StyleSheet.toString();
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : styles + script, title, bodyClassName : theme.classes.root };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    // <style> tags for every style sheet the app modules registered on import, theme included.
+    return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -9329,23 +9628,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about/', action }
+    ]);
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -9438,6 +9729,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | plain | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -9462,7 +9757,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -9470,15 +9765,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -9486,10 +9781,15 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -9546,9 +9846,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -9556,8 +9853,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -9567,7 +9865,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -9595,14 +9893,14 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -9806,19 +10104,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -9873,7 +10181,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -9896,7 +10204,7 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -9904,13 +10212,14 @@ import App from './App.js';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
+    const html = new App().toString();
     return { html };
 }
 ",
@@ -10151,6 +10460,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | plain | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -10175,7 +10488,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -10183,15 +10496,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
@@ -10200,10 +10513,15 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -10260,9 +10578,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -10270,8 +10585,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -10281,7 +10597,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -10309,15 +10625,15 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
-        "vite": "^7.0.0"
+        "cross-env": "^10.1.0",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -10521,37 +10837,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="app">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="app">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -10627,7 +10953,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -10650,7 +10976,8 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -10658,18 +10985,32 @@ import App from './App.js';
 import { getTitleForUrl } from './router-setup.js';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : script, title };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -10999,23 +11340,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about/', action }
+    ]);
 }
 ",
   "src/style.css": ":root {
@@ -11220,6 +11553,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | tailwind | no-router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -11244,7 +11581,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -11252,15 +11589,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -11268,10 +11605,15 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -11328,9 +11670,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -11338,8 +11677,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -11349,7 +11689,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -11377,16 +11717,16 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "cross-env": "^7.0.3",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "cross-env": "^10.1.0",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -11590,19 +11930,29 @@ import Home from './components/Home.js';
  * @property {number} count
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        <\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />
-    </div>
-\`.extend({
+class App extends Component {
     onCreate() {
         this.state = new Model({ count : 0 });
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                <\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -11687,7 +12037,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -11710,7 +12060,7 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
 App.mount({}, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -11718,13 +12068,14 @@ import App from './App.js';
 
 /**
  * Server-side render function.
- * Returns HTML string to be injected into the template.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} _url - Request URL
- * @returns {object} Rendered content { html: string, head?: string }
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(_url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const html = App.mount({}).toString();
+    const html = new App().toString();
     return { html };
 }
 ",
@@ -11823,6 +12174,10 @@ export default defineConfig({
 
 exports[`generated project matrix > matches snapshot: static | tailwind | router 1`] = `
 {
+  ".agents/skills/rasti/SKILL.md": "<skill file>",
+  ".agents/skills/rasti/references/model.md": "<skill file>",
+  ".agents/skills/rasti/references/typescript.md": "<skill file>",
+  ".claude/skills/rasti": "-> ../../.agents/skills/rasti",
   ".gitignore": "# Dependencies
 node_modules
 
@@ -11847,7 +12202,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.0 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -11855,15 +12210,15 @@ Pre-rendered static site with [Rasti](https://rasti.js.org) ^4.1.0 + [Vite](http
 npm run dev      # development server (HMR)
 npm run build    # production build
 npm run preview  # preview production build
-npm start        # start Express server (requires npm run build first)
-npm run build:static   # pre-render configured routes to dist/static/
-npm run serve:static   # serve pre-rendered files locally
+npm run build:static    # pre-render configured routes to dist/static/
+npm run preview:static  # serve pre-rendered files locally
 \`\`\`
 
 ## Architecture
 
-Components live in \`src/components/\` and are [Rasti components](./AGENTS-RASTI.md) defined with \`Component.create\`.
-\`App\` is the root component — it owns \`this.state\` and passes values and callbacks down as props. State is a [Rasti Model](./AGENTS-RASTI.md); mutations trigger re-renders automatically.
+\`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
+Presentational components live in \`src/components/\` and are written with \`Component.create\`.
+\`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
@@ -11872,10 +12227,15 @@ Routes to pre-render are listed in \`static.config.js\`.
 - ESM throughout, 4-space indentation, single quotes, semicolons
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
+- Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
 
-## Rasti API reference
+## Agent skills
 
-See [AGENTS-RASTI.md](./AGENTS-RASTI.md) — Rasti's AGENTS.md: component creation, template interpolations, lifecycle hooks, Model.
+Library references for agents, installed as [Agent Skills](https://agentskills.io) in \`.agents/skills/\` (linked from \`.claude/skills/\`):
+
+- \`rasti\` — components, template interpolations, lifecycle hooks, models and server-side rendering
+
+They match the library versions this project was created with. After upgrading a library, refresh its skill from \`node_modules/<library>/skills/<library>\`.
 ",
   "app.js": "import fs from 'node:fs/promises';
 import express from 'express';
@@ -11932,9 +12292,6 @@ app.use('*all', async (req, res) => {
         if (rendered.bodyClassName) {
             html = html.replace('<body>', '<body class="' + rendered.bodyClassName + '">');
         }
-        if (rendered.dataColorScheme) {
-            html = html.replace('<html', '<html data-color-scheme="' + rendered.dataColorScheme + '"');
-        }
         if (rendered.title) {
             html = html.replace(/<title>[\\s\\S]*?<\\/title>/, '<title>' + rendered.title + '</title>');
         }
@@ -11942,8 +12299,9 @@ app.use('*all', async (req, res) => {
         res.status(200).set({ 'Content-Type' : 'text/html' }).send(html);
     } catch (e) {
         vite?.ssrFixStacktrace(e);
-        console.log(e.stack);
-        res.status(500).end(e.stack);
+        console.error(e.stack);
+        // The stack helps in development but would expose server internals in production.
+        res.status(500).end(isProduction ? 'Internal Server Error' : e.stack);
     }
 });
 
@@ -11953,7 +12311,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -11981,17 +12339,17 @@ export default app;
         "preview:static": "node scripts/serve-static.js"
     },
     "dependencies": {
-        "compression": "^1.8.1",
-        "express": "^5.0.1",
-        "path-to-regexp": "^8.0.0",
-        "rasti": "^4.1.0",
-        "sirv": "^3.0.0"
+        "compression": "^1.8.2",
+        "express": "^5.3.0",
+        "path-to-regexp": "^9.0.0",
+        "rasti": "^5.0.0-alpha.0",
+        "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "cross-env": "^7.0.3",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.0"
+        "@tailwindcss/vite": "^4.3.3",
+        "cross-env": "^10.1.0",
+        "tailwindcss": "^4.3.3",
+        "vite": "^8.3.5"
     }
 }
 ",
@@ -12195,37 +12553,47 @@ import { createAppRouter } from './router-setup.js';
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./router-setup.js').Location | null} location
+ * @property {import('./lib/router.js').Location | null} location
  */
 
-/** Root application component.
- * @type {typeof import('rasti').Component<{}, AppState>}
+/**
+ * Root application component. Owns the state and passes values and callbacks down as props.
+ * @extends {Component<{}, AppState>}
  */
-const App = Component.create\`
-    <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
-        <\${Header} />
-        \${({ state, partial }) => state.location?.test('/') ?
-            partial\`<\${Home} count="\${({ state }) => state.count}" handleIncrement="\${({ state }) => () => { state.count++; }}" />\` :
-            partial\`<\${About} />\`}
-    </div>
-\`.extend({
+class App extends Component {
     /**
      * @param {Object} [options]
-     * @param {string} [options.url] - Initial URL for server-side routing.
+     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
      */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
-        const url = options.url ?? (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
-        this.router.navigate(url, { addToHistory : false });
-    },
+        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    }
+
     onHydrate() {
         this.destroyQueue.push(
             this.router.delegateNavigation(this.el),
             this.router.bindHistory()
         );
     }
-});
+
+    /** Created once per instance, so \`Home\` doesn't re-render for a new callback on every render. */
+    handleIncrement = () => {
+        this.state.count++;
+    };
+
+    template() {
+        return this.html\`
+            <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
+                <\${Header} />
+                \${this.state.location?.test('/') ?
+                    this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
+                    this.html\`<\${About} />\`}
+            </div>
+        \`;
+    }
+}
 
 export default App;
 ",
@@ -12329,7 +12697,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v4.1.0/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.0/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -12352,7 +12720,8 @@ export default Home;
   "src/entry-client.js": "import App from './App.js';
 import './style.css';
 
-// The third argument \`true\` enables hydration of server-rendered HTML.
+// The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
+// The server writes the options it rendered with, so the client hydrates from the same ones.
 App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
@@ -12360,18 +12729,32 @@ import App from './App.js';
 import { getTitleForUrl } from './router-setup.js';
 
 /**
- * SSR render: pass url so App onCreate runs router.navigate; inject __APP_OPTIONS__ and page title for client hydrate.
+ * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
+ * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
+ * @param {Object} options - Per-request options.
+ * @returns {string} JSON safe to embed into an inline script.
+ */
+function serializeOptions(options) {
+    return JSON.stringify(options).replace(
+        /[<>&\\u2028\\u2029]/g,
+        char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
+    );
+}
+
+/**
+ * Server-side render function.
+ * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, bodyClassName?: string, title?: string }}
+ * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
  */
 export function render(url) {
+    // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
     const options = { url };
-    const app = App.mount(options);
-    const html = app.toString();
-    const title = getTitleForUrl(url);
-    const script = \`<script>window.__APP_OPTIONS__=\${JSON.stringify(options)}</script>\`;
-    return { html, head : script, title };
+    const html = new App(options).toString();
+    // The client hydrates with the same options.
+    const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
+    return { html, head : script, title : getTitleForUrl(url) };
 }
 ",
   "src/lib/cn.js": "const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
@@ -12701,23 +13084,15 @@ export function getTitleForUrl(url) {
  * @returns {object} Router with navigate, delegateNavigation, bindHistory, createUrl
  */
 export function createAppRouter(model) {
-    const routes = [
-        {
-            path : '/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        },
-        {
-            path : '/about/',
-            action : (location) => {
-                model.location = location;
-                if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
-            }
-        }
-    ];
-    return createRouter(routes, { baseUrl : '' });
+    const action = (location) => {
+        model.location = location;
+        if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
+    };
+
+    return createRouter([
+        { path : '/', action },
+        { path : '/about/', action }
+    ]);
 }
 ",
   "src/style.css": "@import "tailwindcss";

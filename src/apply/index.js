@@ -1,5 +1,4 @@
 import path from 'node:path';
-import fs from 'node:fs/promises';
 import { applyBase } from './base.js';
 import { applySsr } from './ssr.js';
 import { applyStatic } from './static.js';
@@ -8,22 +7,8 @@ import { applyCssfun } from './cssfun.js';
 import { applyIcons } from './icons.js';
 import { applyRouter } from './router.js';
 import { applyFeaturesInclude } from './featuresInclude.js';
-import { getBaseContext } from './description.js';
-import { copyTemplateFile } from '../utils/template.js';
+import { applyAgents } from './agents.js';
 import { createSpinner, log } from '../utils/logger.js';
-
-const RASTI_AGENTS_MD_URL = 'https://raw.githubusercontent.com/8tentaculos/rasti/master/docs/AGENTS.md';
-
-/**
- * Fetch Rasti AGENTS.md and write to project root as AGENTS-RASTI.md.
- * @param {string} targetDir - Project root directory
- */
-async function fetchRastiAgentsMd(targetDir) {
-    const res = await fetch(RASTI_AGENTS_MD_URL);
-    if (!res.ok) throw new Error(`Failed to fetch AGENTS-RASTI.md: ${res.status}`);
-    const text = await res.text();
-    await fs.writeFile(path.join(targetDir, 'AGENTS-RASTI.md'), text, 'utf-8');
-}
 
 /**
  * Apply a project plan by copying templates and applying features.
@@ -82,31 +67,14 @@ export async function applyPlan(plan) {
         await applyFeaturesInclude(ctx);
         spinner.stop('Features list written');
 
-        spinner.start('Writing AGENTS.md...');
-        const agentsContext = {
-            ...getBaseContext(plan),
-            SSR : (plan.base === 'ssr' || plan.base === 'static') ? 'true' : '',
-            STATIC : plan.base === 'static' ? 'true' : '',
-            TAILWIND : plan.features.tailwind ? 'true' : '',
-            CSSFUN : plan.features.cssfun   ? 'true' : '',
-            ROUTER : plan.features.router   ? 'true' : '',
-            ICONS : plan.features.icons    ? 'true' : '',
-        };
-        await copyTemplateFile('AGENTS.md', path.join(ctx.targetDir, 'AGENTS.md'), agentsContext);
-        spinner.stop('AGENTS.md written');
-
-        spinner.start('Adding Rasti AGENTS.md...');
-        try {
-            await fetchRastiAgentsMd(ctx.targetDir);
-            spinner.stop('Rasti AGENTS.md added');
-        } catch {
-            spinner.stop('Could not fetch Rasti AGENTS.md (offline?) — skipped');
-        }
+        spinner.start('Writing AGENTS.md and agent skills...');
+        await applyAgents(ctx);
+        spinner.stop('AGENTS.md and agent skills written');
 
         logSummary(plan);
 
     } catch (error) {
-        spinner.stop('Failed');
+        spinner.error('Failed');
         throw error;
     }
 }
