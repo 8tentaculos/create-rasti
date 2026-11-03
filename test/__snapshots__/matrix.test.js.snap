@@ -658,14 +658,17 @@ const { classes } = css({
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -1970,14 +1973,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -3113,14 +3119,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -4556,14 +4565,17 @@ const { classes } = css({
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -6101,14 +6113,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -7474,14 +7489,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -9362,14 +9380,17 @@ const { classes } = css({
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -11334,14 +11355,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
@@ -13134,14 +13158,17 @@ import { createAppRouter } from './router-setup.js';
  */
 
 /**
+ * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * @typedef {Object} AppProps
+ * @property {string} [url] - URL to route on creation (the request URL on the server).
+ */
+
+/**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<{}, AppState>}
+ * @extends {Component<AppProps, AppState>}
  */
 class App extends Component {
-    /**
-     * @param {Object} [options]
-     * @param {string} [options.url] - URL to route on creation (the request URL on the server).
-     */
+    /** @param {AppProps} [options] */
     onCreate(options = {}) {
         this.state = new Model({ location : null, count : 0 });
         this.router = createAppRouter(this.state);
