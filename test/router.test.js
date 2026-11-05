@@ -327,11 +327,73 @@ describe('bindHistory', () => {
     });
 });
 
+describe('scroll reset', () => {
+    let scrolls;
+
+    beforeEach(() => {
+        scrolls = 0;
+        globalThis.window = {
+            location : { pathname : '/', search : '' },
+            scrollTo : () => { scrolls++; },
+            history : { pushState : () => {}, replaceState : () => {} },
+            addEventListener : () => {},
+            removeEventListener : () => {}
+        };
+    });
+
+    afterEach(() => {
+        delete globalThis.window;
+    });
+
+    it('scrolls to the top when pushing a history entry', () => {
+        const { router } = buildRouter(['/about']);
+
+        router.navigate('/about');
+
+        expect(scrolls).toBe(1);
+    });
+
+    it('scrolls to the top when replacing a history entry', () => {
+        const { router } = buildRouter(['/about']);
+
+        router.navigate('/about', { replaceHistory : true });
+
+        expect(scrolls).toBe(1);
+    });
+
+    it('keeps the position with resetScroll false', () => {
+        const { router } = buildRouter(['/about']);
+
+        router.navigate('/about?tab=2', { replaceHistory : true, resetScroll : false });
+
+        expect(scrolls).toBe(0);
+    });
+
+    it('leaves the position alone without a history update, as on popstate', () => {
+        const { router } = buildRouter(['/about']);
+
+        router.navigate('/about', { addToHistory : false });
+
+        expect(scrolls).toBe(0);
+    });
+
+    it('does not scroll when no route matches', () => {
+        const { router } = buildRouter(['/about']);
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        router.navigate('/missing');
+
+        spy.mockRestore();
+        expect(scrolls).toBe(0);
+    });
+});
+
 describe('redirect via replaceHistory', () => {
     it('replaces the entry the redirecting action was reached through', () => {
         const history = [];
         globalThis.window = {
             location : { href : 'https://example.com/', origin : 'https://example.com' },
+            scrollTo : () => {},
             history : {
                 pushState : (_s, _t, url) => { history.push(url); },
                 replaceState : (_s, _t, url) => { history[history.length - 1] = url; }

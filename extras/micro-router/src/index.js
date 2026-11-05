@@ -23,6 +23,7 @@ import { match, compile } from 'path-to-regexp';
  * @typedef {Object} NavigateOptions
  * @property {boolean} [addToHistory=true] - Whether to add the navigation to the browser's history.
  * @property {boolean} [replaceHistory=false] - Whether to replace the current history entry instead of adding a new one.
+ * @property {boolean} [resetScroll=true] - Whether to scroll to the top when the navigation adds or replaces a history entry. A `popstate` never scrolls: the browser restores the position.
  */
 
 /**
@@ -146,13 +147,14 @@ export default function createRouter(routes, routerOptions = {}) {
      *
      * History is updated before the action runs, so an action that redirects can
      * replace the entry it was reached through: `navigate('/login', { replaceHistory : true })`.
+     * The page scrolls to the top along with the history update, unless `resetScroll` is `false`.
      *
      * @param {string} url - The path to navigate to, including query string.
      * @param {NavigateOptions} [options={}] - Options for navigation.
      * @returns {*} The matched route action result, or `undefined` if no route matches. Async actions return a Promise.
      */
     const navigate = (url, options = {}) => {
-        const { addToHistory = true, replaceHistory = false } = options;
+        const { addToHistory = true, replaceHistory = false, resetScroll = true } = options;
         // Match the route and query
         const matched = matchRoute(url);
 
@@ -161,6 +163,7 @@ export default function createRouter(routes, routerOptions = {}) {
             // Handle browser history
             if (addToHistory && typeof window !== 'undefined') {
                 window.history[replaceHistory ? 'replaceState' : 'pushState']({}, '', url);
+                if (resetScroll) window.scrollTo({ top : 0, behavior : 'instant' });
             }
             // Call the route's action
             return matched();
@@ -232,7 +235,6 @@ export default function createRouter(routes, routerOptions = {}) {
             if (url.origin !== window.location.origin) return;
 
             event.preventDefault();
-            window.scrollTo({ top : 0, behavior : 'instant' });
             navigate(url.pathname + url.search);
         };
         // Bind the click event to the root element.
