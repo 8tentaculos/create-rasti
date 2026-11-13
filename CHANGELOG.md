@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Bump generated-project `rasti` to `^5.0.0-alpha.0` and `cssfun` to `^0.4.0-alpha.0`.
+- Bump generated-project `rasti` to `^5.0.0-alpha.4` and `cssfun` to `^0.4.0-alpha.0`.
 - Bump generated-project `vite` to `^8.3.5`, `cross-env` to `^10.1.0`, `path-to-regexp` to `^9.0.0`, `tailwindcss` / `@tailwindcss/vite` to `^4.3.3`, `express` to `^5.3.0`, `compression` to `^1.8.2` and `sirv` to `^3.0.2`.
 - `App` is a `Component` subclass with a stable `handleIncrement` class field, following the Rasti 5 skill.
 - SSR: `window.__APP_OPTIONS__` escapes `<`, so a request URL holding `</script>` can't break out of the script tag; production 500 responses no longer include the stack trace.

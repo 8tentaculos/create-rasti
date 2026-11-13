@@ -4,7 +4,7 @@
  * path-to-regexp are mirrored in package.json files, kept in sync by test/versions.test.js).
  */
 export const VERSIONS = {
-    rasti : '^5.0.0-alpha.0',
+    rasti : '^5.0.0-alpha.4',
     vite : '^8.3.5',
     express : '^5.3.0',
     compression : '^1.8.2',
