@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Feathericon components: the XML prolog before `<svg>` kept `class`, `width` and `height` from being applied, and broke the single-root template under Rasti 5.
 - micro-router: its typedefs used Closure function types (`function(string): boolean`), which TypeScript 7 doesn't parse; `Route`, `Router` and `Location` now resolve for TS consumers.
+- `cn` and micro-router: `ClassValue` and `Params` were typed as `Object.<string, …>`, which a declaration build writes as `Object<string, …>`, not a valid TypeScript type (TS2315). They use `Record<string, …>`, as do the other generic JSDoc types in both helpers.
 - micro-router: a `popstate` from an in-page anchor jump (`#section`) no longer routes the same URL again and re-renders the page.
 - Generated `AGENTS.md` listed `npm start` and `npm run serve:static`, which don't exist; they are `npm run preview` and `npm run preview:static`.
 

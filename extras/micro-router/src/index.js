@@ -2,14 +2,14 @@ import { match, compile } from 'path-to-regexp';
 
 /**
  * Route parameters by name. Wildcard parameters (e.g. `*rest`) are arrays of path segments.
- * @typedef {Object.<string, (string|Array.<string>)>} Params
+ * @typedef {Record<string, (string|Array<string>)>} Params
  */
 
 /**
  * @typedef {Object} Location
  * @property {string} path - The route path pattern (e.g., `/user/:id`).
  * @property {Params} params - Route parameters decoded from the URL path. Wildcard parameters (e.g. `*rest`) are arrays of path segments. Untrusted input: escape at the point of output.
- * @property {Object.<string, string>} query - Query parameters parsed from the URL query string. Untrusted input, same as `params`.
+ * @property {Record<string, string>} query - Query parameters parsed from the URL query string. Untrusted input, same as `params`.
  * @property {(url: string) => boolean} test - A function to test if a given URL matches this route. Returns `true` if the URL matches the route, `false` otherwise.
  */
 
@@ -29,7 +29,7 @@ import { match, compile } from 'path-to-regexp';
 /**
  * @typedef {Object} Router
  * @property {(url: string, options?: NavigateOptions) => *} navigate - Navigates to a given URL, matches a route, and returns its action result.
- * @property {(path: string, params?: Params, query?: Object.<string, string>) => string} createUrl - Creates a URL from a route path, parameters, and query string.
+ * @property {(path: string, params?: Params, query?: Record<string, string>) => string} createUrl - Creates a URL from a route path, parameters, and query string.
  * @property {(rootElement: HTMLElement) => () => void} delegateNavigation - Delegates navigation events for links with `data-router` attributes. Returns a cleanup function.
  * @property {() => () => void} bindHistory - Binds browser history changes to the navigation logic. Returns a cleanup function.
  */
@@ -40,7 +40,7 @@ import { match, compile } from 'path-to-regexp';
  * `params` and `query` on a `Location` come from the URL and are decoded but not
  * escaped. Escape them at the point of output, in the context of that output.
  *
- * @param {Array.<Route>} routes - Array of route objects. Each route must have a `path` and an `action` function.
+ * @param {Array<Route>} routes - Array of route objects. Each route must have a `path` and an `action` function.
  * @param {Object} [routerOptions={}] - Options for the router.
  * @param {string} [routerOptions.baseUrl=''] - A base URL to prepend to all routes and navigation.
  * @returns {Router} - Router object with navigation, URL creation, and event delegation methods.
@@ -178,7 +178,7 @@ export default function createRouter(routes, routerOptions = {}) {
      * Creates a URL from a route path, parameters, and query string.
      * @param {string} path - The route path (e.g., `/user/:id`).
      * @param {Params} [params={}] - Parameters to replace in the path (e.g., `{ id : '123' }` for `/user/:id`). Wildcard parameters take an array of segments.
-     * @param {Object.<string, string>} [query={}] - Query parameters to append to the URL (e.g., `{ page : '1', sort : 'name' }`).
+     * @param {Record<string, string>} [query={}] - Query parameters to append to the URL (e.g., `{ page : '1', sort : 'name' }`).
      * @returns {string} - The generated URL with query parameters.
      */
     const createUrl = (path, params = {}, query = {}) => {

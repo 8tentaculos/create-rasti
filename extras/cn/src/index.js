@@ -1,5 +1,5 @@
 /**
- * @typedef {string|number|boolean|null|undefined|Object.<string, *>|Array.<*>} ClassValue
+ * @typedef {string|number|boolean|null|undefined|Record<string, *>|Array<*>} ClassValue
  */
 
 /**
@@ -10,7 +10,7 @@
 const add = (a, b) => a && b ? a + ' ' + b : '' + (a || b);
 
 /**
- * @param {Array.<*>} classes
+ * @param {Array<*>} classes
  * @returns {string}
  */
 const parse = (classes) => {
