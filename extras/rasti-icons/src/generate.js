@@ -111,6 +111,7 @@ export function buildComponent(name, svgContent) {
         ` * @property {string} [label] - Accessible name. Without it the icon is decorative and hidden from assistive technology.`,
         ` */`,
         ``,
+        `/** @type {typeof Component<IconProps>} */`,
         `const ${name} = Component.create(/** @this {import('rasti').Component<IconProps>} */ function() {`,
         `    const { className, ${sizeDefaults}, label } = this.props;`,
         ``,
