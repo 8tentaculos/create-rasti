@@ -412,3 +412,230 @@ describe('redirect via replaceHistory', () => {
         delete globalThis.window;
     });
 });
+
+describe('async actions', () => {
+    let scrolls;
+    let replaced;
+    let reloads;
+    let handlers;
+    let elements;
+
+    /** Promise with its resolve and reject functions exposed. */
+    const deferred = () => {
+        let resolve;
+        let reject;
+        const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+        return { promise, resolve, reject };
+    };
+
+    beforeEach(() => {
+        scrolls = [];
+        replaced = [];
+        reloads = 0;
+        handlers = {};
+        elements = {};
+        globalThis.window = {
+            location : {
+                href : 'https://example.com/',
+                origin : 'https://example.com',
+                pathname : '/',
+                search : '',
+                replace : (url) => { replaced.push(url); },
+                reload : () => { reloads++; }
+            },
+            scrollTo : () => { scrolls.push('top'); },
+            history : { pushState : () => {}, replaceState : () => {} },
+            addEventListener : (type, fn) => { handlers[type] = fn; },
+            removeEventListener : () => {}
+        };
+        globalThis.document = {
+            getElementById : (id) => elements[id] ?? null
+        };
+    });
+
+    afterEach(() => {
+        delete globalThis.window;
+        delete globalThis.document;
+    });
+
+    /** Element stub that records the scroll into view under its id. */
+    const element = (id) => {
+        elements[id] = { scrollIntoView : () => { scrolls.push(id); } };
+    };
+
+    /** Delegates on a fake root element and clicks a `data-router` link to `href`. */
+    const clickLink = (router, href) => {
+        let onClick;
+        router.delegateNavigation({ addEventListener : (_, fn) => { onClick = fn; }, removeEventListener : () => {} });
+        const event = {
+            button : 0,
+            defaultPrevented : false,
+            target : { closest : () => ({ getAttribute : () => null, hasAttribute : () => false, href }) },
+            preventDefault : vi.fn()
+        };
+        onClick(event);
+        return event;
+    };
+
+    it('passes the action a signal', () => {
+        let context;
+        const router = createRouter([{ path : '/', action : (_location, ctx) => { context = ctx; } }]);
+
+        router.navigate('/', { addToHistory : false });
+
+        expect(context.signal).toBeInstanceOf(AbortSignal);
+        expect(context.signal.aborted).toBe(false);
+    });
+
+    it('aborts the signal when a newer navigation starts', () => {
+        const signals = [];
+        const router = createRouter([{ path : '/:page', action : (_location, { signal }) => { signals.push(signal); } }]);
+
+        router.navigate('/a', { addToHistory : false });
+        router.navigate('/b', { addToHistory : false });
+
+        expect(signals.map(signal => signal.aborted)).toEqual([true, false]);
+    });
+
+    it('returns the promise of an async action and resolves to its value', async () => {
+        const router = createRouter([{ path : '/', action : async () => 'page' }]);
+
+        await expect(router.navigate('/', { addToHistory : false })).resolves.toBe('page');
+    });
+
+    it('scrolls once the async action is done', async () => {
+        const load = deferred();
+        const router = createRouter([{ path : '/about', action : () => load.promise }]);
+
+        const navigation = router.navigate('/about');
+        expect(scrolls).toEqual([]);
+
+        load.resolve();
+        await navigation;
+
+        expect(scrolls).toEqual(['top']);
+    });
+
+    it('does not scroll for a navigation a newer one replaced', async () => {
+        const slow = deferred();
+        const router = createRouter([
+            { path : '/slow', action : () => slow.promise },
+            { path : '/fast', action : () => 'fast' }
+        ]);
+
+        const navigation = router.navigate('/slow');
+        router.navigate('/fast');
+        slow.resolve();
+        await navigation;
+
+        expect(scrolls).toEqual(['top']);
+    });
+
+    it('scrolls once for a redirect, from the action it redirected to', () => {
+        const router = createRouter([
+            { path : '/admin', action : () => router.navigate('/login', { replaceHistory : true }) },
+            { path : '/login', action : () => 'login' }
+        ]);
+
+        router.navigate('/admin');
+
+        expect(scrolls).toEqual(['top']);
+    });
+
+    it('scrolls to the element the hash names', () => {
+        element('install');
+        const router = createRouter([{ path : '/docs', action : () => {} }]);
+
+        router.navigate('/docs#install');
+
+        expect(scrolls).toEqual(['install']);
+    });
+
+    it('decodes the hash to find the element', () => {
+        element('año');
+        const router = createRouter([{ path : '/docs', action : () => {} }]);
+
+        router.navigate('/docs#a%C3%B1o');
+
+        expect(scrolls).toEqual(['año']);
+    });
+
+    it('looks a malformed hash up as written', () => {
+        element('100%');
+        const router = createRouter([{ path : '/docs', action : () => {} }]);
+
+        router.navigate('/docs#100%');
+
+        expect(scrolls).toEqual(['100%']);
+    });
+
+    it('scrolls to the top when the hash names no element', () => {
+        const router = createRouter([{ path : '/docs', action : () => {} }]);
+
+        router.navigate('/docs#missing');
+
+        expect(scrolls).toEqual(['top']);
+    });
+
+    it('rejects when the action of the current navigation rejects', async () => {
+        const error = new Error('chunk failed');
+        const router = createRouter([{ path : '/', action : () => Promise.reject(error) }]);
+
+        await expect(router.navigate('/', { addToHistory : false })).rejects.toBe(error);
+    });
+
+    it('resolves to undefined when a replaced navigation rejects', async () => {
+        const slow = deferred();
+        const router = createRouter([
+            { path : '/slow', action : () => slow.promise },
+            { path : '/fast', action : () => 'fast' }
+        ]);
+
+        const navigation = router.navigate('/slow', { addToHistory : false });
+        router.navigate('/fast', { addToHistory : false });
+        slow.reject(new Error('late'));
+
+        await expect(navigation).resolves.toBeUndefined();
+    });
+
+    it('carries the hash of a link into the navigation', () => {
+        element('install');
+        const router = createRouter([{ path : '/docs', action : () => {} }]);
+
+        clickLink(router, 'https://example.com/docs#install');
+
+        expect(scrolls).toEqual(['install']);
+    });
+
+    it('leaves an anchor on the current page to the browser', () => {
+        const calls = [];
+        const router = createRouter([{ path : '/docs', action : (location) => { calls.push(location); } }]);
+        router.navigate('/docs', { addToHistory : false });
+
+        const event = clickLink(router, 'https://example.com/docs#install');
+
+        expect(event.preventDefault).not.toHaveBeenCalled();
+        expect(calls).toHaveLength(1);
+    });
+
+    it('follows a link with a full page load when its action rejects', async () => {
+        const router = createRouter([{ path : '/docs', action : () => Promise.reject(new Error('chunk failed')) }]);
+
+        clickLink(router, 'https://example.com/docs#install');
+        await vi.waitFor(() => expect(replaced).toEqual(['https://example.com/docs#install']));
+    });
+
+    it('reloads the page when the action of a popstate rejects', async () => {
+        const router = createRouter([
+            { path : '/', action : () => {} },
+            { path : '/docs', action : () => Promise.reject(new Error('chunk failed')) }
+        ]);
+        router.bindHistory();
+        router.navigate('/', { addToHistory : false });
+
+        window.location.pathname = '/docs';
+        handlers.popstate();
+
+        await vi.waitFor(() => expect(reloads).toBe(1));
+    });
+});

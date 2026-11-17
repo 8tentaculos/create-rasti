@@ -14,16 +14,21 @@ import { match, compile } from 'path-to-regexp';
  */
 
 /**
+ * @typedef {Object} ActionContext
+ * @property {AbortSignal} signal - Aborted when a newer navigation starts, so an async action can skip rendering a page that is no longer current.
+ */
+
+/**
  * @typedef {Object} Route
  * @property {string} path - The route path pattern (e.g., `/user/:id`).
- * @property {(location: Location) => *} action - The action function to call when the route matches. Receives a `Location` object as parameter.
+ * @property {(location: Location, context: ActionContext) => *} action - The action function to call when the route matches. Receives a `Location` object and an `ActionContext`. It may return a Promise, e.g. to load the page before rendering it.
  */
 
 /**
  * @typedef {Object} NavigateOptions
  * @property {boolean} [addToHistory=true] - Whether to add the navigation to the browser's history.
  * @property {boolean} [replaceHistory=false] - Whether to replace the current history entry instead of adding a new one.
- * @property {boolean} [resetScroll=true] - Whether to scroll to the top when the navigation adds or replaces a history entry. A `popstate` never scrolls: the browser restores the position.
+ * @property {boolean} [resetScroll=true] - Whether to scroll when the navigation adds or replaces a history entry: to the element the URL hash names, or to the top. It happens once the action is done. A `popstate` never scrolls: the browser restores the position.
  */
 
 /**
@@ -53,6 +58,12 @@ export default function createRouter(routes, routerOptions = {}) {
      * @type {Map<string, import('path-to-regexp').MatchFunction<Params>>}
      */
     const matchers = new Map();
+
+    /**
+     * Controller of the navigation in progress, aborted when a newer one starts.
+     * @type {AbortController|null}
+     */
+    let controller = null;
 
     /**
      * Path and query of the last URL routed, to tell a new page from an in-page anchor jump.
@@ -117,7 +128,7 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Matches a given url against the routes.
      * @param {string} url - The url to match.
-     * @returns {(() => *)|null} - A function that calls the matched route's action with a `Location` object, or `null` if no match is found.
+     * @returns {({ route: Route, location: Location })|null} - The matched route and its `Location`, or `null` if no match is found.
      * @private
      */
     const matchRoute = (url) => {
@@ -135,7 +146,7 @@ export default function createRouter(routes, routerOptions = {}) {
                     test : (url) => !!getMatch(getUrlParts(url).pathname, route.path)
                 };
 
-                return () => route.action(location);
+                return { route, location };
             }
         }
 
@@ -143,36 +154,95 @@ export default function createRouter(routes, routerOptions = {}) {
     };
 
     /**
+     * Scrolls to the element the url hash names, or to the top of the page.
+     * @param {string} url - The url navigated to.
+     * @private
+     */
+    const scrollToUrl = (url) => {
+        const hash = url.split('#')[1];
+        let id = hash;
+        if (hash) {
+            try {
+                id = decodeURIComponent(hash);
+            } catch {
+                // A malformed escape names the element as written.
+            }
+        }
+        const target = id ? document.getElementById(id) : null;
+        if (target) target.scrollIntoView({ behavior : 'instant' });
+        else window.scrollTo({ top : 0, behavior : 'instant' });
+    };
+
+    /**
+     * Navigates to a url, calling `onError` if an async action rejects.
+     * @param {string} url - The path to navigate to, including query string.
+     * @param {NavigateOptions} options - Options for navigation.
+     * @param {(error: *) => *} [onError] - Handles a rejected action. Without it, the returned promise rejects.
+     * @returns {*} The matched route action result, or `undefined` if no route matches.
+     * @private
+     */
+    const go = (url, options, onError) => {
+        const { addToHistory = true, replaceHistory = false, resetScroll = true } = options;
+        // Match the route and query
+        const matched = matchRoute(url);
+
+        if (!matched) {
+            console.error('No route matched:', url);
+            return undefined;
+        }
+
+        // A newer navigation supersedes the one in progress
+        controller?.abort();
+        const navigation = controller = new AbortController();
+        const { signal } = navigation;
+
+        currentUrl = url.split('#')[0];
+        // Handle browser history
+        if (addToHistory && typeof window !== 'undefined') {
+            window.history[replaceHistory ? 'replaceState' : 'pushState']({}, '', url);
+        }
+
+        // Scroll once the page is rendered, unless a newer navigation took over (e.g. a redirect)
+        const scroll = () => {
+            if (addToHistory && resetScroll && !signal.aborted && typeof window !== 'undefined') scrollToUrl(url);
+        };
+
+        // Call the route's action
+        const result = matched.route.action(matched.location, { signal });
+
+        if (!result || typeof result.then !== 'function') {
+            scroll();
+            return result;
+        }
+
+        return Promise.resolve(result).then(
+            (value) => {
+                scroll();
+                return value;
+            },
+            (error) => {
+                if (signal.aborted) return undefined;
+                if (onError) return onError(error);
+                throw error;
+            }
+        );
+    };
+
+    /**
      * Navigates to a given path, matches a route, and calls its action with a `Location` object.
      *
      * History is updated before the action runs, so an action that redirects can
      * replace the entry it was reached through: `navigate('/login', { replaceHistory : true })`.
-     * The page scrolls to the top along with the history update, unless `resetScroll` is `false`.
+     *
+     * The action receives a `signal` that is aborted when a newer navigation starts. When
+     * the action returns a Promise, `navigate` returns it, and the scroll waits for it. A
+     * superseded navigation that rejects resolves to `undefined` instead.
      *
      * @param {string} url - The path to navigate to, including query string.
      * @param {NavigateOptions} [options={}] - Options for navigation.
      * @returns {*} The matched route action result, or `undefined` if no route matches. Async actions return a Promise.
      */
-    const navigate = (url, options = {}) => {
-        const { addToHistory = true, replaceHistory = false, resetScroll = true } = options;
-        // Match the route and query
-        const matched = matchRoute(url);
-
-        if (matched) {
-            currentUrl = url.split('#')[0];
-            // Handle browser history
-            if (addToHistory && typeof window !== 'undefined') {
-                window.history[replaceHistory ? 'replaceState' : 'pushState']({}, '', url);
-                if (resetScroll) window.scrollTo({ top : 0, behavior : 'instant' });
-            }
-            // Call the route's action
-            return matched();
-        } else {
-            console.error('No route matched:', url);
-        }
-
-        return undefined;
-    };
+    const navigate = (url, options = {}) => go(url, options);
 
     /**
      * Creates a URL from a route path, parameters, and query string.
@@ -192,7 +262,8 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Delegates navigation events for links with `data-router` attributes.
      * Links the router cannot own (cross-origin, `target`, `download`, `rel="external"`)
-     * are left to the browser's default handling.
+     * are left to the browser's default handling, and so is an anchor on the current
+     * page. If the action rejects, the link is followed with a full page load.
      * @param {HTMLElement} rootElement - The root element to listen for click events.
      * @returns {() => void} - A function to undelegate the event listener.
      */
@@ -234,8 +305,12 @@ export default function createRouter(routes, routerOptions = {}) {
 
             if (url.origin !== window.location.origin) return;
 
+            const path = url.pathname + url.search;
+            // An anchor on the current page is a jump the browser already does.
+            if (url.hash && path === currentUrl) return;
+
             event.preventDefault();
-            navigate(url.pathname + url.search);
+            go(path + url.hash, {}, () => window.location.replace(url.href));
         };
         // Bind the click event to the root element.
         rootElement.addEventListener('click', handleClick);
@@ -248,7 +323,7 @@ export default function createRouter(routes, routerOptions = {}) {
     /**
      * Binds browser history changes to the navigation logic.
      * A `popstate` that keeps the routed path and query, such as a jump to an in-page
-     * anchor, is ignored. No-op outside the browser.
+     * anchor, is ignored. If the action rejects, the page is reloaded. No-op outside the browser.
      * @returns {() => void} - A function to unbind the `popstate` event listener.
      */
     const bindHistory = () => {
@@ -259,7 +334,7 @@ export default function createRouter(routes, routerOptions = {}) {
             // Routing the same URL again would re-render the page under the reader.
             if (url === currentUrl) return;
             // On popstate, navigate to the current URL
-            navigate(url, { addToHistory : false });
+            go(url, { addToHistory : false }, () => window.location.reload());
         };
 
         window.addEventListener('popstate', handlePopState);
