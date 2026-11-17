@@ -41,8 +41,9 @@ app.use('*all', async (req, res) => {
             render = (await vite.ssrLoadModule('/src/entry-server.{{SRC_EXT}}')).render;
         } else {
             template = templateHtml;
-            // @ts-ignore Built by `vite build --ssr`, so it only exists after a build.
-            render = (await import('./dist/server/entry-server.js')).render;
+            // Built by `vite build --ssr`. A path in a variable keeps `tsc` from type-checking the bundle.
+            const serverEntry = './dist/server/entry-server.js';
+            render = (await import(serverEntry)).render;
         }
 
         const rendered = await render(url);
