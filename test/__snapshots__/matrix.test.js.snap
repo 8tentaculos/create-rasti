@@ -1110,7 +1110,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -1173,9 +1173,9 @@ They match the library versions this project was created with. After upgrading a
 import { css } from 'cssfun';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 const { classes } = css({
     '@global' : {
@@ -1208,34 +1208,29 @@ const { classes } = css({
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component with the global styles. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -1246,13 +1241,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -1935,14 +1932,20 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.ts": "import App from './App.ts';
+import { route } from './router-setup.ts';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app')!);
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -1976,22 +1979,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -2136,7 +2184,7 @@ npm run preview  # preview production build
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -2194,8 +2242,7 @@ They match the library versions this project was created with. After upgrading a
 import { css } from 'cssfun';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 const { classes } = css({
     '@global' : {
@@ -2229,31 +2276,29 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -2263,12 +2308,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -2941,13 +2989,19 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -2990,22 +3044,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -4035,7 +4133,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -4095,40 +4193,35 @@ They match the library versions this project was created with. After upgrading a
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -4139,13 +4232,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -4657,12 +4752,18 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.ts": "import App from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app')!);
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -4696,22 +4797,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -4962,7 +5108,7 @@ npm run preview  # preview production build
 
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -5017,37 +5163,34 @@ They match the library versions this project was created with. After upgrading a
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -5057,12 +5200,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -5564,11 +5710,17 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -5611,22 +5763,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -6548,7 +6744,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -6610,40 +6806,35 @@ They match the library versions this project was created with. After upgrading a
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -6654,13 +6845,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -7200,12 +7393,18 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.ts": "import App from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app')!);
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -7239,22 +7438,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -7363,7 +7607,7 @@ npm run preview  # preview production build
 
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -7420,37 +7664,34 @@ They match the library versions this project was created with. After upgrading a
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -7460,12 +7701,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -7995,11 +8239,17 @@ export default function createRouter(routes, routerOptions = {}) {
 }
 ",
   "src/main.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
-App.mount({ url : window.location.pathname + window.location.search }, document.querySelector('#app'));
+// Routing loads the chunk of the page, which \`App\` renders on mount.
+route(window.location.pathname + window.location.search).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')),
+    (error) => console.error('Could not load the page', error)
+);
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -8042,22 +8292,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -9435,7 +9729,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -9587,9 +9881,9 @@ app.listen(port, () => {
 import { css } from 'cssfun';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 const { classes } = css({
     '@global' : {
@@ -9622,34 +9916,29 @@ const { classes } = css({
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component with the global styles. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -9660,13 +9949,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -9948,7 +10239,7 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
@@ -9956,18 +10247,21 @@ document.body.classList.add(theme.classes.root);
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
@@ -9985,7 +10279,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -9996,11 +10290,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     // <style> tags for every style sheet the app modules registered on import, theme included.
@@ -10408,8 +10704,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -10443,22 +10740,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -10604,7 +10946,7 @@ npm run preview  # preview production build
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -10748,8 +11090,7 @@ app.listen(port, () => {
 import { css } from 'cssfun';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 const { classes } = css({
     '@global' : {
@@ -10783,31 +11124,29 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -10817,12 +11156,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -11094,24 +11436,29 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -11125,13 +11472,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     // <style> tags for every style sheet the app modules registered on import, theme included.
@@ -11539,7 +11888,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -11582,22 +11932,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -12849,7 +13243,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -13000,40 +13394,35 @@ app.listen(port, () => {
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -13044,13 +13433,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -13161,24 +13552,27 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -13194,7 +13588,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -13205,11 +13599,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -13616,8 +14012,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -13651,22 +14048,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -13918,7 +14360,7 @@ npm run preview  # preview production build
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -14061,37 +14503,34 @@ app.listen(port, () => {
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -14101,12 +14540,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -14207,20 +14649,25 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -14234,13 +14681,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -14647,7 +15096,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -14690,22 +15140,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -15849,7 +16343,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -16002,40 +16496,35 @@ app.listen(port, () => {
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -16046,13 +16535,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -16191,24 +16682,27 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -16224,7 +16718,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -16235,11 +16729,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -16646,8 +17142,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -16681,22 +17178,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -16806,7 +17348,7 @@ npm run preview  # preview production build
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -16951,37 +17493,34 @@ app.listen(port, () => {
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -16991,12 +17530,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -17125,20 +17667,25 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -17152,13 +17699,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -17565,7 +18114,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -17608,22 +18158,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -19429,7 +20023,7 @@ npm run preview:static  # serve pre-rendered files locally
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -19776,9 +20370,9 @@ app.listen(port, () => {
 import { css } from 'cssfun';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 const { classes } = css({
     '@global' : {
@@ -19811,34 +20405,29 @@ const { classes } = css({
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component with the global styles. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -19849,13 +20438,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -20137,7 +20728,7 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
@@ -20145,18 +20736,21 @@ document.body.classList.add(theme.classes.root);
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
@@ -20174,7 +20768,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -20185,11 +20779,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     // <style> tags for every style sheet the app modules registered on import, theme included.
@@ -20597,8 +21193,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -20632,22 +21229,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -20812,7 +21454,7 @@ npm run preview:static  # serve pre-rendered files locally
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -21151,8 +21793,7 @@ app.listen(port, () => {
 import { css } from 'cssfun';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 const { classes } = css({
     '@global' : {
@@ -21186,31 +21827,29 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -21220,12 +21859,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="\${classes.root}">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -21497,24 +22139,29 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import { theme } from './theme.js';
 
 document.body.classList.add(theme.classes.root);
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -21528,13 +22175,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     // <style> tags for every style sheet the app modules registered on import, theme included.
@@ -21942,7 +22591,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -21985,22 +22635,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/theme.js": "import { createTheme } from 'cssfun';
@@ -23697,7 +24391,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -24043,40 +24737,35 @@ app.listen(port, () => {
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -24087,13 +24776,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -24204,24 +24895,27 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -24237,7 +24931,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -24248,11 +24942,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -24659,8 +25355,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -24694,22 +25391,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -24980,7 +25722,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -25318,37 +26060,34 @@ app.listen(port, () => {
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -25358,12 +26097,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="app">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -25464,20 +26206,25 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -25491,13 +26238,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -25904,7 +26653,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -25947,22 +26697,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": ":root {
@@ -27551,7 +28345,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -27899,40 +28693,35 @@ app.listen(port, () => {
   "src/App.ts": "import { Component, Model } from 'rasti';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 
 interface AppAttributes {
     count: number;
-    location: Location | null;
 }
 
 /** Application state. Mutating it re-renders \`App\`. */
 class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
-/** Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 /** Root application component. Owns the state and passes values and callbacks down as props. */
-class App extends Component<AppProps, AppState> {
-    /** Set in \`onCreate\`, which runs in the base constructor: \`declare\` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+class App extends Component<AppProps, AppState, RouteModel> {
+    onCreate() {
+        this.state = new AppState({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -27943,13 +28732,15 @@ class App extends Component<AppProps, AppState> {
 
     template() {
         const state = this.state!;
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
 
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -28088,24 +28879,27 @@ class Home extends Component<HomeProps> {
 export default Home;
 ",
   "src/entry-client.ts": "import App from './App.ts';
-import type { AppProps } from './App.ts';
+import { route } from './router-setup.ts';
 import './style.css';
 
 declare global {
     interface Window {
         /** The options the server rendered \`App\` with, written into the page by \`entry-server\`. */
-        __APP_OPTIONS__: AppProps;
+        __APP_OPTIONS__: { url: string };
     }
 }
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app')!, true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app')!, true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -28121,7 +28915,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\\u2028\\u2029]/g,
         char => \`\\\\u\${char.charCodeAt(0).toString(16).padStart(4, '0')}\`
@@ -28132,11 +28926,13 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param url - Request URL
  */
-export function render(url: string): RenderResult {
+export async function render(url: string): Promise<RenderResult> {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -28543,8 +29339,9 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.ts": "import createRouter from './lib/router.js';
-import type { Location, Router } from './lib/router.js';
+  "src/router-setup.ts": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
+import type { ActionContext, Location, Router } from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -28578,22 +29375,67 @@ export function getTitleForUrl(url: string): string {
     return getTitleForPath(pathname);
 }
 
+/** A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it. */
+interface LazyPage<T> {
+    Component: T | null;
+    load(): Promise<T>;
+}
+
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param model - Model with location
- * @returns Router with navigate, delegateNavigation, bindHistory, createUrl
+ * Wraps the import of a page module.
+ * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
  */
-export function createAppRouter(model: { location: Location | null }): Router {
-    const action = (location: Location) => {
+const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
+    const page: LazyPage<T> = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/** About page, loaded by its route on the first visit. */
+export const About = lazy(() => import('./components/About.ts'));
+
+interface RouteAttributes {
+    /** Location of the page shown, \`null\` for a URL no route matches. */
+    location: Location | null;
+}
+
+/** Model the router updates and \`App\` renders. */
+export class RouteModel extends Model<RouteAttributes> {}
+export interface RouteModel extends RouteAttributes {} // exposes the attributes on the model
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param url - Path and query.
+ * @returns The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url: string): Promise<{ model: RouteModel, router: Router }> {
+    const model = new RouteModel({ location : null });
+
+    /** Action that shows a page, once its chunk (if any) is loaded. */
+    const show = (page?: LazyPage<unknown>) => async (location: Location, { signal }: ActionContext) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";
@@ -28722,7 +29564,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\` — routes update \`state.location\`; client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -29062,37 +29904,34 @@ app.listen(port, () => {
   "src/App.js": "import { Component, Model } from 'rasti';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 
 /**
  * @typedef {Object} AppState
  * @property {number} count
- * @property {import('./lib/router.js').Location | null} location
  */
 
 /**
- * Options \`App\` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options \`App\` is created with, along with the \`model\` from \`route\`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 
 /**
  * Root application component. Owns the state and passes values and callbacks down as props.
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at \`model.location\`, which \`route\` in \`router-setup.js\` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
  */
 class App extends Component {
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
+    onCreate() {
+        this.state = new Model({ count : 0 });
     }
 
     onHydrate() {
+        const { router } = this.props;
         this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
+            router.delegateNavigation(this.el),
+            router.bindHistory()
         );
     }
 
@@ -29102,12 +29941,15 @@ class App extends Component {
     };
 
     template() {
+        // \`location\` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
         return this.html\`
             <div class="font-sans flex min-h-dvh flex-col items-center gap-6 md:gap-10 max-w-[1000px] mx-auto p-5 md:p-12 box-border text-white">
                 <\${Header} />
-                \${this.state.location?.test('/') ?
+                \${location?.test('/') ?
                     this.html\`<\${Home} count="\${this.state.count}" handleIncrement=\${this.handleIncrement} />\` :
-                    this.html\`<\${About} />\`}
+                    location && this.html\`<\${About.Component} />\`}
             </div>
         \`;
     }
@@ -29236,20 +30078,25 @@ const Home = Component.create\`
 export default Home;
 ",
   "src/entry-client.js": "import App from './App.js';
+import { route } from './router-setup.js';
 import './style.css';
 
 // The third argument \`true\` hydrates the server-rendered HTML instead of rendering it again.
-// The server writes the options it rendered with, so the client hydrates from the same ones.
-App.mount(window.__APP_OPTIONS__, document.querySelector('#app'), true);
+// The server writes the options it rendered with, so the client routes the same URL. Routing
+// loads the chunk of the page, which hydration needs to render the markup the server sent.
+route(window.__APP_OPTIONS__.url).then(
+    ({ model, router }) => App.mount({ model, router }, document.querySelector('#app'), true),
+    (error) => console.error('Could not load the page to hydrate it', error)
+);
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl } from './router-setup.js';
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
  * characters that could close the tag (\`</script>\`) or break older JavaScript parsers.
- * @param {Object} options - Per-request options.
+ * @param {{ url: string }} options - Per-request options.
  * @returns {string} JSON safe to embed into an inline script.
  */
 function serializeOptions(options) {
@@ -29263,13 +30110,15 @@ function serializeOptions(options) {
  * Server-side render function.
  * Returns the pieces \`app.js\` injects into the \`index.html\` template.
  * @param {string} url - Request URL
- * @returns {{ html: string, head?: string, title?: string, bodyClassName?: string }}
+ * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
-export function render(url) {
+export async function render(url) {
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
+    const html = new App({ model, router }).toString();
     const options = { url };
-    const html = new App(options).toString();
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
     return { html, head : script, title : getTitleForUrl(url) };
@@ -29676,7 +30525,8 @@ export default function createRouter(routes, routerOptions = {}) {
     return { navigate, createUrl, delegateNavigation, bindHistory };
 }
 ",
-  "src/router-setup.js": "import createRouter from './lib/router.js';
+  "src/router-setup.js": "import { Model } from 'rasti';
+import createRouter from './lib/router.js';
 
 const DEFAULT_TITLE = 'test-app';
 
@@ -29719,22 +30569,66 @@ export function getTitleForUrl(url) {
 }
 
 /**
- * Create router bound to model (sets model.location on navigate).
- * Updates document.title on client when route changes.
- * @param {{ location: (import('./lib/router.js').Location|null) }} model - Model with location
- * @returns {import('./lib/router.js').Router} Router with navigate, delegateNavigation, bindHistory, createUrl
+ * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
+ * @template T
+ * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
+ * @returns {{ Component : T|null, load : () => Promise<T> }}
  */
-export function createAppRouter(model) {
-    /** @param {import('./lib/router.js').Location} location */
-    const action = (location) => {
+const lazy = (importModule) => {
+    /** @type {{ Component : T|null, load : () => Promise<T> }} */
+    const page = {
+        Component : null,
+        async load() {
+            page.Component ??= (await importModule()).default;
+            return page.Component;
+        }
+    };
+    return page;
+};
+
+/**
+ * About page, loaded by its route on the first visit.
+ */
+export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Model the router updates and \`App\` renders.
+ * @typedef {Object} RouteState
+ * @property {import('./lib/router.js').Location|null} location - Location of the page shown, \`null\` for a URL no route matches.
+ */
+
+/**
+ * Route \`url\` before mounting \`App\`: create the model it renders and the router that
+ * updates it, and navigate to \`url\`, which loads the chunk of its page. Rendering is
+ * synchronous, so await it before rendering on the server or hydrating in the browser.
+ * Updates document.title on client when route changes.
+ * @param {string} url - Path and query.
+ * @returns {Promise<{ model: RouteState, router: import('./lib/router.js').Router }>} The \`model\` and \`router\` options for \`App\`.
+ */
+export async function route(url) {
+    const model = /** @type {RouteState} */ (new Model({ location : null }));
+
+    /**
+     * Action that shows a page, once its chunk (if any) is loaded.
+     * @param {{ load : () => Promise<*> }} [page] - Lazy page the route renders.
+     * @returns {(location: import('./lib/router.js').Location, context: import('./lib/router.js').ActionContext) => Promise<void>}
+     */
+    const show = (page) => async (location, { signal }) => {
+        await page?.load();
+        // A newer navigation took over while the chunk loaded.
+        if (signal.aborted) return;
         model.location = location;
         if (typeof document !== 'undefined') document.title = getTitleForPath(location.path);
     };
 
-    return createRouter([
-        { path : '/', action },
-        { path : '/about/', action }
+    const router = createRouter([
+        { path : '/', action : show() },
+        { path : '/about/', action : show(About) }
     ]);
+
+    await router.navigate(url, { addToHistory : false });
+
+    return { model, router };
 }
 ",
   "src/style.css": "@import "tailwindcss";

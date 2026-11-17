@@ -3,9 +3,9 @@ import { css } from 'cssfun';
 import Header from './components/Header.ts';
 import Home from './components/Home.ts';
 {{#if ROUTER}}
-import About from './components/About.ts';
-import { createAppRouter } from './router-setup.ts';
-import type { Location, Router } from './lib/router.js';
+import { About } from './router-setup.ts';
+import type { RouteModel } from './router-setup.ts';
+import type { Router } from './lib/router.js';
 {{#endif}}
 
 const { classes } = css({
@@ -39,9 +39,6 @@ const { classes } = css({
 
 interface AppAttributes {
     count: number;
-{{#if ROUTER}}
-    location: Location | null;
-{{#endif}}
 }
 
 /** Application state. Mutating it re-renders `App`. */
@@ -49,35 +46,30 @@ class AppState extends Model<AppAttributes> {}
 interface AppState extends AppAttributes {} // exposes the attributes on the model
 
 {{#if ROUTER}}
-/** Options `App` is created with. Rasti keeps the ones it doesn't reserve as props. */
+/** Options `App` is created with, along with the `model` from `route`. Rasti keeps the ones it doesn't reserve as props. */
 export interface AppProps {
-    /** URL to route on creation (the request URL on the server). */
-    url?: string;
+    /** Router that updates the model, bound to links and history once hydrated. */
+    router: Router;
 }
 
 {{#endif}}
 /** Root application component with the global styles. Owns the state and passes values and callbacks down as props. */
 {{#if ROUTER}}
-class App extends Component<AppProps, AppState> {
-    /** Set in `onCreate`, which runs in the base constructor: `declare` keeps a field initializer from resetting it. */
-    declare router: Router;
-
-    onCreate(options: AppProps = {}) {
-        this.state = new AppState({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
-    }
-
-    onHydrate() {
-        this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
-        );
-    }
+class App extends Component<AppProps, AppState, RouteModel> {
 {{#else}}
 class App extends Component<{}, AppState> {
+{{#endif}}
     onCreate() {
         this.state = new AppState({ count : 0 });
+    }
+{{#if ROUTER}}
+
+    onHydrate() {
+        const { router } = this.props;
+        this.destroyQueue.push(
+            router.delegateNavigation(this.el),
+            router.bindHistory()
+        );
     }
 {{#endif}}
 
@@ -88,14 +80,18 @@ class App extends Component<{}, AppState> {
 
     template() {
         const state = this.state!;
+{{#if ROUTER}}
+        // `location` is null for a URL no route matches: no page renders.
+        const { location } = this.model!;
+{{#endif}}
 
         return this.html`
             <div class="${classes.root}">
                 <${Header} />
 {{#if ROUTER}}
-                ${state.location?.test('/') ?
+                ${location?.test('/') ?
                     this.html`<${Home} count="${state.count}" handleIncrement=${this.handleIncrement} />` :
-                    this.html`<${About} />`}
+                    location && this.html`<${About.Component} />`}
 {{#else}}
                 <${Home} count="${state.count}" handleIncrement=${this.handleIncrement} />
 {{#endif}}

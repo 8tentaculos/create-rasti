@@ -38,7 +38,7 @@ Presentational components live in `src/components/` and are written with `Compon
 Theming uses `src/theme.js` (light/dark via `data-color-scheme` on `<html>`; CSS variables prefixed `--fun-*`).
 {{#endif}}
 {{#if ROUTER}}
-Routing is handled by `src/router-setup.js` — routes update `state.location`; client-side links use the `data-router` attribute.
+Routing is handled by `src/router-setup.{{SRC_EXT}}`: `route(url)` creates the model `App` renders and the router that sets its `location`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (`lazy(() => import(...))`, like `About`) is loaded by its route action before the model changes. Client-side links use the `data-router` attribute.
 {{#endif}}
 {{#if STATIC}}
 Routes to pre-render are listed in `static.config.js`.

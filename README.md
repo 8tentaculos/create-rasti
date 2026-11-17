@@ -46,7 +46,7 @@ Without either flag, the generated project uses plain CSS.
 
 ### `--router`
 
-Adds a small universal router built on [path-to-regexp](https://github.com/pillarjs/path-to-regexp). It is copied into the generated project as `src/lib/router.js`, then wired through `src/router-setup.js`, example pages, and an App shell with navigation.
+Adds a small universal router built on [path-to-regexp](https://github.com/pillarjs/path-to-regexp). It is copied into the generated project as `src/lib/router.js`, then wired through `src/router-setup.js`, example pages, and an App shell with navigation. The project routes before mounting `App`, so a route can load its page as a chunk of its own: the example `About` page is code-split, and the server and the hydrating client wait for it before rendering.
 
 The router is intentionally narrow: route matching, URL creation, browser history, and delegated `a[data-router]` links. It works with SPA, SSR, and Static templates.
 

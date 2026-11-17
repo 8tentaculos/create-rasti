@@ -1,8 +1,7 @@
 import { Component } from 'rasti';
 import App from './App.ts';
 {{#if ROUTER}}
-import type { AppProps } from './App.ts';
-import { getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl } from './router-setup.ts';
 {{#endif}}
 {{#if CSSFUN}}
 import { theme } from './theme.js';
@@ -24,7 +23,7 @@ export interface RenderResult {
  * @param options - Per-request options.
  * @returns JSON safe to embed into an inline script.
  */
-function serializeOptions(options: AppProps): string {
+function serializeOptions(options: { url: string }): string {
     return JSON.stringify(options).replace(
         /[<>&\u2028\u2029]/g,
         char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
@@ -36,12 +35,16 @@ function serializeOptions(options: AppProps): string {
  * Server-side render function.
  * @param {{#if ROUTER}}url{{#else}}_url{{#endif}} - Request URL
  */
-export function render({{#if ROUTER}}url{{#else}}_url{{#endif}}: string): RenderResult {
+export {{#if ROUTER}}async {{#endif}}function render({{#if ROUTER}}url{{#else}}_url{{#endif}}: string): {{#if ROUTER}}Promise<RenderResult>{{#else}}RenderResult{{#endif}} {
+{{#if ROUTER}}
+    // Rendering is synchronous, so routing first loads the chunk of the page.
+    const { model, router } = await route(url);
+{{#endif}}
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
 {{#if ROUTER}}
-    const options: AppProps = { url };
-    const html = new App(options).toString();
+    const html = new App({ model, router }).toString();
+    const options = { url };
     // The client hydrates with the same options.
     const script = `<script>window.__APP_OPTIONS__=${serializeOptions(options)}</script>`;
 {{#if CSSFUN}}

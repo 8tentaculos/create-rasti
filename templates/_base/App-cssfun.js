@@ -3,8 +3,7 @@ import { css } from 'cssfun';
 import Header from './components/Header.js';
 import Home from './components/Home.js';
 {{#if ROUTER}}
-import About from './components/About.js';
-import { createAppRouter } from './router-setup.js';
+import { About } from './router-setup.js';
 {{#endif}}
 
 const { classes } = css({
@@ -39,45 +38,37 @@ const { classes } = css({
 /**
  * @typedef {Object} AppState
  * @property {number} count
-{{#if ROUTER}}
- * @property {import('./lib/router.js').Location | null} location
-{{#endif}}
  */
 {{#if ROUTER}}
 
 /**
- * Options `App` is created with. Rasti keeps the ones it doesn't reserve as props.
+ * Options `App` is created with, along with the `model` from `route`. Rasti keeps the ones it doesn't reserve as props.
  * @typedef {Object} AppProps
- * @property {string} [url] - URL to route on creation (the request URL on the server).
+ * @property {import('./lib/router.js').Router} router - Router that updates the model, bound to links and history once hydrated.
  */
 {{#endif}}
 
 /**
  * Root application component with the global styles. Owns the state and passes values and callbacks down as props.
 {{#if ROUTER}}
- * @extends {Component<AppProps, AppState>}
+ * Renders the page at `model.location`, which `route` in `router-setup.js` sets.
+ * @extends {Component<AppProps, AppState, import('./router-setup.js').RouteState>}
 {{#else}}
  * @extends {Component<{}, AppState>}
 {{#endif}}
  */
 class App extends Component {
-{{#if ROUTER}}
-    /** @param {AppProps} [options] */
-    onCreate(options = {}) {
-        this.state = new Model({ location : null, count : 0 });
-        this.router = createAppRouter(this.state);
-        this.router.navigate(options.url ?? '/', { addToHistory : false });
-    }
-
-    onHydrate() {
-        this.destroyQueue.push(
-            this.router.delegateNavigation(this.el),
-            this.router.bindHistory()
-        );
-    }
-{{#else}}
     onCreate() {
         this.state = new Model({ count : 0 });
+    }
+{{#if ROUTER}}
+
+    onHydrate() {
+        const { router } = this.props;
+        this.destroyQueue.push(
+            router.delegateNavigation(this.el),
+            router.bindHistory()
+        );
     }
 {{#endif}}
 
@@ -87,13 +78,18 @@ class App extends Component {
     };
 
     template() {
+{{#if ROUTER}}
+        // `location` is null for a URL no route matches: no page renders.
+        const { location } = this.model;
+
+{{#endif}}
         return this.html`
             <div class="${classes.root}">
                 <${Header} />
 {{#if ROUTER}}
-                ${this.state.location?.test('/') ?
+                ${location?.test('/') ?
                     this.html`<${Home} count="${this.state.count}" handleIncrement=${this.handleIncrement} />` :
-                    this.html`<${About} />`}
+                    location && this.html`<${About.Component} />`}
 {{#else}}
                 <${Home} count="${this.state.count}" handleIncrement=${this.handleIncrement} />
 {{#endif}}
