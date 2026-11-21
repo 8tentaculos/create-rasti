@@ -1,7 +1,7 @@
 import { Component } from 'rasti';
 import App from './App.js';
 {{#if ROUTER}}
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
 {{#endif}}
 {{#if CSSFUN}}
 import { theme } from './theme.js';
@@ -9,6 +9,9 @@ import { StyleSheet } from 'cssfun';
 {{#endif}}
 
 {{#if ROUTER}}
+// Every page is in memory before the first render.
+await loadPages();
+
 /**
  * Serializes the render options for an inline `<script>`, as unicode escapes for the
  * characters that could close the tag (`</script>`) or break older JavaScript parsers.
@@ -35,7 +38,7 @@ function serializeOptions(options) {
  */
 export {{#if ROUTER}}async {{#endif}}function render({{#if ROUTER}}url{{#else}}_url{{#endif}}) {
 {{#if ROUTER}}
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
 {{#endif}}
     // Hydration matches elements by uid, so every request numbers them from the start.
@@ -46,7 +49,7 @@ export {{#if ROUTER}}async {{#endif}}function render({{#if ROUTER}}url{{#else}}_
     // The client hydrates with the same options.
     const script = `<script>window.__APP_OPTIONS__=${serializeOptions(options)}</script>`;
 {{#if CSSFUN}}
-    // <style> tags for every style sheet the app modules registered on import, theme included.
+    // <style> tags for every style sheet the app modules registered on import, theme and every page included.
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 {{#else}}
     return { html, head : script, title : getTitleForUrl(url) };

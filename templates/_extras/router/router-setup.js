@@ -41,6 +41,14 @@ export function getTitleForUrl(url) {
     return getTitleForPath(path);
 }
 
+{{#if SSR}}
+/**
+ * Every page `lazy` created, for `loadPages`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+{{#endif}}
 /**
  * A page kept in a chunk of its own. `Component` is `null` until `load` imports it.
  * @template T
@@ -56,6 +64,9 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+{{#if SSR}}
+    lazyPages.push(page);
+{{#endif}}
     return page;
 };
 
@@ -63,6 +74,18 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+{{#if SSR}}
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk{{#if CSSFUN}}, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none{{#endif}}.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
+{{#endif}}
 
 /**
  * Model the router updates and `App` renders.

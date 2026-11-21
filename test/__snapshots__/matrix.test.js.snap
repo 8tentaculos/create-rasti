@@ -1121,6 +1121,7 @@ Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model 
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -2192,6 +2193,7 @@ Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model 
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -9731,7 +9733,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -9742,6 +9744,7 @@ Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model 
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -10264,9 +10267,12 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -10294,7 +10300,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -10302,7 +10308,7 @@ export async function render(url: string): Promise<RenderResult> {
     const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
-    // <style> tags for every style sheet the app modules registered on import, theme included.
+    // <style> tags for every style sheet the app modules registered on import, theme and every page included.
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
@@ -10749,6 +10755,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -10761,11 +10770,21 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -10949,7 +10968,7 @@ npm run preview  # preview production build
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -10957,6 +10976,7 @@ Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model 
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -11455,9 +11475,12 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -11479,7 +11502,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -11487,7 +11510,7 @@ export async function render(url) {
     const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
-    // <style> tags for every style sheet the app modules registered on import, theme included.
+    // <style> tags for every style sheet the app modules registered on import, theme and every page included.
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
@@ -11936,6 +11959,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -11950,6 +11979,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -11957,6 +11987,16 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.
@@ -13249,7 +13289,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -13579,7 +13619,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -13607,7 +13650,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -14061,6 +14104,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -14073,11 +14119,20 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -14367,7 +14422,7 @@ npm run preview  # preview production build
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -14670,7 +14725,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -14692,7 +14750,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -15148,6 +15206,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -15162,6 +15226,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -15169,6 +15234,15 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.
@@ -16353,7 +16427,7 @@ npm run typecheck  # type-check with tsc (also run by build)
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -16713,7 +16787,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -16741,7 +16818,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -17195,6 +17272,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -17207,11 +17287,20 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -17359,7 +17448,7 @@ npm run preview  # preview production build
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 
 ## Conventions
 
@@ -17692,7 +17781,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -17714,7 +17806,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -18170,6 +18262,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -18184,6 +18282,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -18191,6 +18290,15 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.
@@ -20037,7 +20145,7 @@ npm run preview:static  # serve pre-rendered files locally
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -20049,6 +20157,7 @@ Routes to pre-render are listed in \`static.config.js\`.
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -20765,9 +20874,12 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -20795,7 +20907,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -20803,7 +20915,7 @@ export async function render(url: string): Promise<RenderResult> {
     const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
-    // <style> tags for every style sheet the app modules registered on import, theme included.
+    // <style> tags for every style sheet the app modules registered on import, theme and every page included.
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
@@ -21250,6 +21362,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -21262,11 +21377,21 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -21469,7 +21594,7 @@ npm run preview:static  # serve pre-rendered files locally
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
 Theming uses \`src/theme.js\` (light/dark via \`data-color-scheme\` on \`<html>\`; CSS variables prefixed \`--fun-*\`).
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -21478,6 +21603,7 @@ Routes to pre-render are listed in \`static.config.js\`.
 - Spaces around colons in objects: \`{ key : value }\`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props \`handle*\` (\`handleIncrement\`), never \`on*\`: those names belong to DOM events and lifecycle hooks
+- \`@global\` rules and the theme go in modules the entry imports (\`App\`, \`theme.js\`), never in a lazy page: once it loads, its global rules apply to every page
 
 ## Agent skills
 
@@ -22170,9 +22296,12 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
 import { theme } from './theme.js';
 import { StyleSheet } from 'cssfun';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -22194,7 +22323,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -22202,7 +22331,7 @@ export async function render(url) {
     const options = { url };
     // The client hydrates with the same options.
     const script = \`<script>window.__APP_OPTIONS__=\${serializeOptions(options)}</script>\`;
-    // <style> tags for every style sheet the app modules registered on import, theme included.
+    // <style> tags for every style sheet the app modules registered on import, theme and every page included.
     return { html, head : StyleSheet.toString() + script, title : getTitleForUrl(url), bodyClassName : theme.classes.root };
 }
 ",
@@ -22651,6 +22780,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -22665,6 +22800,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -22672,6 +22808,16 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.
@@ -24409,7 +24555,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -24934,7 +25080,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -24962,7 +25111,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -25416,6 +25565,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -25428,11 +25580,20 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -25741,7 +25902,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -26239,7 +26400,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -26261,7 +26425,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -26717,6 +26881,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -26731,6 +26901,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -26738,6 +26909,15 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.
@@ -28367,7 +28547,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.ts\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are also \`Component\` subclasses, the form that types best: \`Component<Props, State>\` types \`this.props\` and \`this.state\`.
 \`src/entry-server.ts\` renders \`App\` to HTML for each request and \`src/entry-client.ts\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.ts\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -28922,7 +29102,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.ts": "import { Component } from 'rasti';
 import App from './App.ts';
-import { route, getTitleForUrl } from './router-setup.ts';
+import { route, getTitleForUrl, loadPages } from './router-setup.ts';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /** The pieces \`app.js\` injects into the \`index.html\` template. */
 export interface RenderResult {
@@ -28950,7 +29133,7 @@ function serializeOptions(options: { url: string }): string {
  * @param url - Request URL
  */
 export async function render(url: string): Promise<RenderResult> {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -29404,6 +29587,9 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+/** Every page \`lazy\` created, for \`loadPages\`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. \`() => import('./components/About.ts')\`.
@@ -29416,11 +29602,20 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 interface RouteAttributes {
     /** Location of the page shown, \`null\` for a URL no route matches. */
@@ -29587,7 +29782,7 @@ npm run preview:static  # serve pre-rendered files locally
 \`App\` (\`src/App.js\`) is the root component, written as a \`Component\` subclass: it owns \`this.state\` (a Rasti \`Model\`) and passes values and callbacks down as props. Mutating the state re-renders it.
 Presentational components live in \`src/components/\` and are written with \`Component.create\`.
 \`src/entry-server.js\` renders \`App\` to HTML for each request and \`src/entry-client.js\` hydrates it in the browser; \`app.js\` is the Express server that joins them.
-Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. Client-side links use the \`data-router\` attribute.
+Routing is handled by \`src/router-setup.js\`: \`route(url)\` creates the model \`App\` renders and the router that sets its \`location\`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (\`lazy(() => import(...))\`, like \`About\`) is loaded by its route action before the model changes. The server loads every page \`lazy\` created before its first render (\`loadPages\`), so a new lazy page needs no other change. Client-side links use the \`data-router\` attribute.
 Routes to pre-render are listed in \`static.config.js\`.
 
 ## Conventions
@@ -30115,7 +30310,10 @@ route(window.__APP_OPTIONS__.url).then(
 ",
   "src/entry-server.js": "import { Component } from 'rasti';
 import App from './App.js';
-import { route, getTitleForUrl } from './router-setup.js';
+import { route, getTitleForUrl, loadPages } from './router-setup.js';
+
+// Every page is in memory before the first render.
+await loadPages();
 
 /**
  * Serializes the render options for an inline \`<script>\`, as unicode escapes for the
@@ -30137,7 +30335,7 @@ function serializeOptions(options) {
  * @returns {Promise<{ html: string, head?: string, title?: string, bodyClassName?: string }>}
  */
 export async function render(url) {
-    // Rendering is synchronous, so routing first loads the chunk of the page.
+    // Rendering is synchronous, so it waits for routing to set the page.
     const { model, router } = await route(url);
     // Hydration matches elements by uid, so every request numbers them from the start.
     Component.resetUid();
@@ -30593,6 +30791,12 @@ export function getTitleForUrl(url) {
 }
 
 /**
+ * Every page \`lazy\` created, for \`loadPages\`.
+ * @type {Array<{ load : () => Promise<unknown> }>}
+ */
+const lazyPages = [];
+
+/**
  * A page kept in a chunk of its own. \`Component\` is \`null\` until \`load\` imports it.
  * @template T
  * @param {() => Promise<{ default : T }>} importModule - Imports the page module, e.g. \`() => import('./components/About.js')\`.
@@ -30607,6 +30811,7 @@ const lazy = (importModule) => {
             return page.Component;
         }
     };
+    lazyPages.push(page);
     return page;
 };
 
@@ -30614,6 +30819,15 @@ const lazy = (importModule) => {
  * About page, loaded by its route on the first visit.
  */
 export const About = lazy(() => import('./components/About.js'));
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk.
+ * @returns {Promise<void>}
+ */
+export async function loadPages() {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
 
 /**
  * Model the router updates and \`App\` renders.

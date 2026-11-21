@@ -17,7 +17,8 @@ function getRouterContext(plan) {
         ROUTE_ABOUT : routeAbout,
         CSSFUN : plan.features.cssfun ? 'true' : '',
         TAILWIND : plan.features.tailwind ? 'true' : '',
-        ROUTER : 'true'
+        ROUTER : 'true',
+        SSR : plan.base === 'ssr' || plan.base === 'static' ? 'true' : ''
     };
 }
 

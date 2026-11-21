@@ -38,7 +38,7 @@ Presentational components live in `src/components/` and are written with `Compon
 Theming uses `src/theme.js` (light/dark via `data-color-scheme` on `<html>`; CSS variables prefixed `--fun-*`).
 {{#endif}}
 {{#if ROUTER}}
-Routing is handled by `src/router-setup.{{SRC_EXT}}`: `route(url)` creates the model `App` renders and the router that sets its `location`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (`lazy(() => import(...))`, like `About`) is loaded by its route action before the model changes. Client-side links use the `data-router` attribute.
+Routing is handled by `src/router-setup.{{SRC_EXT}}`: `route(url)` creates the model `App` renders and the router that sets its `location`, and the entry files await it before mounting. Rendering is synchronous, so a page kept in a chunk of its own (`lazy(() => import(...))`, like `About`) is loaded by its route action before the model changes.{{#if SSR}} The server loads every page `lazy` created before its first render (`loadPages`), so a new lazy page needs no other change.{{#endif}} Client-side links use the `data-router` attribute.
 {{#endif}}
 {{#if STATIC}}
 Routes to pre-render are listed in `static.config.js`.
@@ -58,6 +58,11 @@ Icon components generated from SVG live in `src/icons/`.
 - Spaces around colons in objects: `{ key : value }`
 - Component files are PascalCase; utilities are camelCase
 - Name callback props `handle*` (`handleIncrement`), never `on*`: those names belong to DOM events and lifecycle hooks
+{{#if CSSFUN}}
+{{#if ROUTER}}
+- `@global` rules and the theme go in modules the entry imports (`App`, `theme.js`), never in a lazy page: once it loads, its global rules apply to every page
+{{#endif}}
+{{#endif}}
 
 ## Agent skills
 

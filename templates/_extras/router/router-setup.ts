@@ -40,6 +40,11 @@ interface LazyPage<T> {
     load(): Promise<T>;
 }
 
+{{#if SSR}}
+/** Every page `lazy` created, for `loadPages`. */
+const lazyPages: LazyPage<unknown>[] = [];
+
+{{#endif}}
 /**
  * Wraps the import of a page module.
  * @param importModule - Imports the page module, e.g. `() => import('./components/About.ts')`.
@@ -52,11 +57,25 @@ const lazy = <T>(importModule: () => Promise<{ default: T }>): LazyPage<T> => {
             return page.Component;
         }
     };
+{{#if SSR}}
+    lazyPages.push(page);
+{{#endif}}
     return page;
 };
 
 /** About page, loaded by its route on the first visit. */
 export const About = lazy(() => import('./components/About.ts'));
+{{#if SSR}}
+
+/**
+ * Load every page kept in a chunk of its own. The server awaits it before its first render, so
+ * no request waits for a chunk{{#if CSSFUN}}, and every page embeds the style sheets of all of them,
+ * whatever pages earlier requests loaded: the browser finds them in the page and attaches none{{#endif}}.
+ */
+export async function loadPages(): Promise<void> {
+    await Promise.all(lazyPages.map((page) => page.load()));
+}
+{{#endif}}
 
 interface RouteAttributes {
     /** Location of the page shown, `null` for a URL no route matches. */
