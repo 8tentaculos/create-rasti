@@ -35,7 +35,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -75,7 +75,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -98,12 +98,12 @@ They match the library versions this project was created with. After upgrading a
         "typecheck": "tsc"
     },
     "dependencies": {
-        "cssfun": "^0.4.0-alpha.0",
-        "rasti": "^5.0.0-alpha.4"
+        "cssfun": "^0.4.0-alpha.1",
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -377,7 +377,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -583,7 +583,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -619,7 +619,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -641,11 +641,11 @@ They match the library versions this project was created with. After upgrading a
         "preview": "vite preview"
     },
     "dependencies": {
-        "cssfun": "^0.4.0-alpha.0",
-        "rasti": "^5.0.0-alpha.4"
+        "cssfun": "^0.4.0-alpha.1",
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -911,7 +911,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -1094,7 +1094,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -1136,7 +1136,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -1159,13 +1159,13 @@ They match the library versions this project was created with. After upgrading a
         "typecheck": "tsc"
     },
     "dependencies": {
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -1510,7 +1510,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -2170,7 +2170,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -2208,7 +2208,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -2230,12 +2230,12 @@ They match the library versions this project was created with. After upgrading a
         "preview": "vite preview"
     },
     "dependencies": {
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -2570,7 +2570,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -3209,7 +3209,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -3247,7 +3247,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -3270,11 +3270,11 @@ They match the library versions this project was created with. After upgrading a
         "typecheck": "tsc"
     },
     "dependencies": {
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -3373,7 +3373,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -3683,7 +3683,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -3717,7 +3717,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -3739,10 +3739,10 @@ They match the library versions this project was created with. After upgrading a
         "preview": "vite preview"
     },
     "dependencies": {
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -3833,7 +3833,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -4120,7 +4120,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -4159,7 +4159,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -4183,11 +4183,11 @@ They match the library versions this project was created with. After upgrading a
     },
     "dependencies": {
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -4330,7 +4330,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -5096,7 +5096,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev).
 
 ## Commands
 
@@ -5131,7 +5131,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -5154,10 +5154,10 @@ They match the library versions this project was created with. After upgrading a
     },
     "dependencies": {
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -5290,7 +5290,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -6040,7 +6040,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -6078,7 +6078,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -6101,13 +6101,13 @@ They match the library versions this project was created with. After upgrading a
         "typecheck": "tsc"
     },
     "dependencies": {
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "tailwindcss": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -6236,7 +6236,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -6404,7 +6404,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -6438,7 +6438,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -6460,12 +6460,12 @@ They match the library versions this project was created with. After upgrading a
         "preview": "vite preview"
     },
     "dependencies": {
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "@tailwindcss/vite": "^4.3.5",
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -6586,7 +6586,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -6731,7 +6731,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -6770,7 +6770,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -6794,13 +6794,13 @@ They match the library versions this project was created with. After upgrading a
     },
     "dependencies": {
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "tailwindcss": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -6971,7 +6971,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -7595,7 +7595,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
+Single page app powered by [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -7630,7 +7630,7 @@ They match the library versions this project was created with. After upgrading a
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
     </head>
@@ -7653,12 +7653,12 @@ They match the library versions this project was created with. After upgrading a
     },
     "dependencies": {
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4"
+        "rasti": "^5.0.0-alpha.7"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "@tailwindcss/vite": "^4.3.5",
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -7819,7 +7819,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -8432,7 +8432,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -8546,7 +8546,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -8572,9 +8572,9 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -8583,7 +8583,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -8865,7 +8865,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -9097,7 +9097,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -9207,7 +9207,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -9232,14 +9232,14 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -9513,7 +9513,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -9716,7 +9716,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -9832,7 +9832,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -9858,10 +9858,10 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -9870,7 +9870,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -10223,7 +10223,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -10952,7 +10952,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -11064,7 +11064,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -11089,15 +11089,15 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -11440,7 +11440,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -12139,7 +12139,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -12251,7 +12251,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -12280,7 +12280,7 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -12289,7 +12289,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -12396,7 +12396,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -12729,7 +12729,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -12837,7 +12837,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -12865,12 +12865,12 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -12969,7 +12969,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -13273,7 +13273,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -13386,7 +13386,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -13416,7 +13416,7 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -13425,7 +13425,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -13576,7 +13576,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -14407,7 +14407,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -14516,7 +14516,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -14545,12 +14545,12 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -14691,7 +14691,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -15497,7 +15497,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -15609,7 +15609,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -15638,18 +15638,18 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "@types/compression": "^1.8.1",
         "@types/express": "^5.0.6",
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -15786,7 +15786,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -15977,7 +15977,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -16085,7 +16085,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -16113,14 +16113,14 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -16249,7 +16249,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -16411,7 +16411,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -16524,7 +16524,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -16554,18 +16554,18 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "@types/compression": "^1.8.1",
         "@types/express": "^5.0.6",
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -16744,7 +16744,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -17433,7 +17433,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Server-side rendered app with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -17542,7 +17542,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -17571,14 +17571,14 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -17747,7 +17747,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -18416,7 +18416,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -18533,7 +18533,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -18561,9 +18561,9 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -18572,7 +18572,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -19046,7 +19046,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -19294,7 +19294,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -19407,7 +19407,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -19434,14 +19434,14 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -19907,7 +19907,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -20126,7 +20126,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -20245,7 +20245,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -20273,10 +20273,10 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -20285,7 +20285,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -20830,7 +20830,7 @@ class Home extends Component<HomeProps> {
         return this.html\`
             <div class="\${classes.root}">
                 <h1 class="\${classes.title}">
-                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+                    <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
                 </h1>
                 <div class="\${classes.counter}">
                     <\${Button} handleClick=\${this.props.handleIncrement}>
@@ -21576,7 +21576,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [CSSFUN](https://cssfun.js.org).
 
 ## Commands
 
@@ -21691,7 +21691,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <!--app-head-->
@@ -21718,15 +21718,15 @@ export default app;
     },
     "dependencies": {
         "compression": "^1.8.2",
-        "cssfun": "^0.4.0-alpha.0",
+        "cssfun": "^0.4.0-alpha.1",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -22261,7 +22261,7 @@ const { classes } = css({
 const Home = Component.create\`
     <div class="\${classes.root}">
         <h1 class="\${classes.title}">
-            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" /></a>
+            <a class="\${classes.logoLink}" href="https://rasti.js.org" target="_blank"><img class="\${classes.logoLight}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo.svg" alt="test-app" /><img class="\${classes.logoDark}" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" /></a>
         </h1>
         <div class="\${classes.counter}">
             <\${Button} handleClick="\${({ props }) => props.handleIncrement}">
@@ -22977,7 +22977,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -23092,7 +23092,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -23123,7 +23123,7 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -23132,7 +23132,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -23431,7 +23431,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -23780,7 +23780,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -23891,7 +23891,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -23921,12 +23921,12 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -24217,7 +24217,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -24537,7 +24537,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -24653,7 +24653,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -24685,7 +24685,7 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
@@ -24694,7 +24694,7 @@ export default app;
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -25037,7 +25037,7 @@ class Home extends Component<HomeProps> {
             <div class="home">
                 <h1 class="title">
                     <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="counter">
@@ -25885,7 +25885,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com).
 
 ## Commands
 
@@ -25997,7 +25997,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -26028,12 +26028,12 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -26366,7 +26366,7 @@ const Home = Component.create\`
     <div class="home">
         <h1 class="title">
             <a class="logo-link" href="https://rasti.js.org" target="_blank">
-                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="logo" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="counter">
@@ -27189,7 +27189,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -27304,7 +27304,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -27335,18 +27335,18 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "@types/compression": "^1.8.1",
         "@types/express": "^5.0.6",
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -27675,7 +27675,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -27882,7 +27882,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -27993,7 +27993,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -28023,14 +28023,14 @@ export default app;
     "dependencies": {
         "compression": "^1.8.2",
         "express": "^5.3.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -28351,7 +28351,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
@@ -28529,7 +28529,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -28645,7 +28645,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -28677,18 +28677,18 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "@types/compression": "^1.8.1",
         "@types/express": "^5.0.6",
         "@types/node": "^22.20.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
+        "tailwindcss": "^4.3.5",
         "typescript": "^7.0.2",
-        "vite": "^8.3.5"
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -29059,7 +29059,7 @@ class Home extends Component<HomeProps> {
             <div class="flex w-full flex-col items-center gap-6 md:gap-10">
                 <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
                     <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                        <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
                     </a>
                 </h1>
                 <div class="flex items-center">
@@ -29765,7 +29765,7 @@ npm-debug.log*
 ",
   "AGENTS.md": "# test-app
 
-Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.4 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
+Pre-rendered static site with [Rasti](https://rasti.js.org) ^5.0.0-alpha.7 + [Vite](https://vite.dev) + [Express](https://expressjs.com), styled with [Tailwind CSS](https://tailwindcss.com).
 
 ## Commands
 
@@ -29877,7 +29877,7 @@ export default app;
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>test-app</title>
         <link rel="stylesheet" href="/src/style.css" />
@@ -29908,14 +29908,14 @@ export default app;
         "compression": "^1.8.2",
         "express": "^5.3.0",
         "path-to-regexp": "^9.0.0",
-        "rasti": "^5.0.0-alpha.4",
+        "rasti": "^5.0.0-alpha.7",
         "sirv": "^3.0.2"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "^4.3.5",
         "cross-env": "^10.1.0",
-        "tailwindcss": "^4.3.3",
-        "vite": "^8.3.5"
+        "tailwindcss": "^4.3.5",
+        "vite": "^8.3.8"
     }
 }
 ",
@@ -30276,7 +30276,7 @@ const Home = Component.create\`
     <div class="flex w-full flex-col items-center gap-6 md:gap-10">
         <h1 class="flex items-center justify-center gap-4 text-4xl font-bold m-0">
             <a class="inline-block" href="https://rasti.js.org" target="_blank">
-                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.4/docs/logo-dark.svg" alt="test-app" />
+                <img class="h-14 md:h-24 block" src="https://cdn.jsdelivr.net/gh/8tentaculos/rasti@v5.0.0-alpha.7/docs/logo-dark.svg" alt="test-app" />
             </a>
         </h1>
         <div class="flex items-center">
