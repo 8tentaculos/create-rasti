@@ -1,6 +1,6 @@
 {
     "name": "create-rasti",
-    "version": "0.1.0-alpha.2",
+    "version": "0.1.0-alpha.3",
     "description": "Create Rasti projects with Vite",
     "type": "module",
     "bin": {
